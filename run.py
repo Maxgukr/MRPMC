@@ -3,11 +3,14 @@ import pandas as pd
 from Model import RF, GBDT, LR, KNN, SVM, StackModel, VotingModel
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import classification_report, accuracy_score, precision_recall_curve, \
+from sklearn.metrics import accuracy_score, precision_recall_curve, \
     f1_score, roc_curve, average_precision_score, auc, confusion_matrix, precision_score, recall_score
 import datetime as dt
 import os
 from statsmodels.stats.proportion import proportion_confint
+from sklearn.calibration import calibration_curve
+
+#import shap_interpretation
 
 
 X_train, y_train, X_test_zf, y_test_zf, id_zf = generate_train_data('./data/zfprocessed_data.csv',
@@ -35,7 +38,7 @@ def gbdt(X_train, y_train, X_test, y_test):
 
     # save rf feature importance
     df_gbdt_feature_importance = pd.DataFrame(data=gbdt_feature_importance.reshape(1, len(gbdt_feature_importance)),
-                                            columns=list(columns))
+                                              columns=list(columns))
     df_gbdt_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     # df_rf_feature_importance.loc[0, df_rf_feature_importance.columns.values[:30]].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
@@ -128,7 +131,7 @@ def vote_models(X_train, y_train, X_test, y_test):
     return [vote_model, vote_model_predict, vote_model_predict_proba]
 
 
-def voting(rf, gbdt, lr, svm, weights):  #svm,
+def voting(rf, gbdt, lr, svm, weights):  # svm,
     voting_proba = np.zeros((len(rf), 2))
     voting_label = np.zeros((len(rf), ))
     all_proba = np.hstack((rf[:, 1].reshape(len(rf), 1),
@@ -149,56 +152,54 @@ def voting(rf, gbdt, lr, svm, weights):  #svm,
 
 
 summary1 = pd.DataFrame(data=np.zeros((19, 12)),
-                       columns=pd.MultiIndex.from_product([['gg', 'zf', 'xy'],
+                        columns=pd.MultiIndex.from_product([['gg', 'zf', 'xy'],
                                                            ['EmsembleModel', 'RF', 'GBDT', 'LR']]),
-                       index=['AUC',
-                              'AUC-95%-CI-low',
-                              'AUC-95%-CI-up',
-                              'Accuracy',
-                              'Accuracy-95%-CI-low',
-                              'Accuracy-95%-CI-up',
-                              'Sensitivity',
-                              'Sensitivity-95%-CI-low',
-                              'Sensitivity-95%-CI-up',
-                              'Specificity',
-                              'Specificity-95%-CI-low',
-                              'Specificity-95%-CI-up',
-                              'PPV',
-                              'NPV',
-                              'f1 score',
-                              'TP',
-                              'FN',
-                              'FP',
-                              'TN']
-                       )
+                        index=['AUC',
+                               'AUC-95%-CI-low',
+                               'AUC-95%-CI-up',
+                               'Accuracy',
+                               'Accuracy-95%-CI-low',
+                               'Accuracy-95%-CI-up',
+                               'Sensitivity',
+                               'Sensitivity-95%-CI-low',
+                               'Sensitivity-95%-CI-up',
+                               'Specificity',
+                               'Specificity-95%-CI-low',
+                               'Specificity-95%-CI-up',
+                               'PPV',
+                               'NPV',
+                               'f1 score',
+                               'TP',
+                               'FN',
+                               'FP',
+                               'TN'])
 
 
 summary2 = pd.DataFrame(data=np.zeros((19, 6)),
                         columns=pd.MultiIndex.from_product([['gg', 'zf', 'xy'],
                                                            ['SVM', 'KNN']]),
-                       index=['AUC',
-                              'AUC-95%-CI-low',
-                              'AUC-95%-CI-up',
-                              'Accuracy',
-                              'Accuracy-95%-CI-low',
-                              'Accuracy-95%-CI-up',
-                              'Sensitivity',
-                              'Sensitivity-95%-CI-low',
-                              'Sensitivity-95%-CI-up',
-                              'Specificity',
-                              'Specificity-95%-CI-low',
-                              'Specificity-95%-CI-up',
-                              'PPV',
-                              'NPV',
-                              'f1 score',
-                              'TP',
-                              'FN',
-                              'FP',
-                              'TN']
-                       )
+                        index=['AUC',
+                               'AUC-95%-CI-low',
+                               'AUC-95%-CI-up',
+                               'Accuracy',
+                               'Accuracy-95%-CI-low',
+                               'Accuracy-95%-CI-up',
+                               'Sensitivity',
+                               'Sensitivity-95%-CI-low',
+                               'Sensitivity-95%-CI-up',
+                               'Specificity',
+                               'Specificity-95%-CI-low',
+                               'Specificity-95%-CI-up',
+                               'PPV',
+                               'NPV',
+                               'f1 score',
+                               'TP',
+                               'FN',
+                               'FP',
+                               'TN'])
 
 
-def analysis_results(results, y_test, hp):
+def analysis_results(results, X_test, y_test, hp):
     # file = open(path+'/'+hp+'-summary.txt', 'w')
     # old = sys.stdout
     # sys.stdout = file
@@ -209,6 +210,9 @@ def analysis_results(results, y_test, hp):
         summary = summary1
     else:
         summary = summary2
+
+    #shap_interpretation.run_shap(results, X_test, new_path, hp)
+
     for key, item in results.items():
         print("####################################################")
         print("/*results of ", key, "*/")
@@ -256,18 +260,23 @@ def analysis_results(results, y_test, hp):
         # print("AUC 95% confidence interval:", area-1.96*se, min(area+1.96*se, 1.0))
         summary.loc['AUC-95%-CI-low'][hp, key] = area-1.96*se
         summary.loc['AUC-95%-CI-up'][hp, key] = min(area+1.96*se, 1.0)
+
         print("####################################################")
+
     # sys.stdout = old  # 还原系统输出
     # file.close()
     summary.to_excel(new_path+'/'+mode+'-'+str(len(results))+'-summary.xlsx')
 
-    # 绘制ROC、PRC、混淆矩阵
+    # 绘制ROC、PRC、混淆矩阵, calibration curve/density
     labels_roc = []
     labels_prc = []
     colors = ['navy', 'turquoise', 'darkorange', 'cornflowerblue', 'seagreen', 'pink']
     plt.style.use("ggplot")
     fig1, ax1 = plt.subplots(1, 1, figsize=(10, 10), dpi=400)
     fig2, ax2 = plt.subplots(1, 1, figsize=(10, 10), dpi=400)
+    fig3, ax3 = plt.subplots(1, 1, figsize=(10, 10), dpi=400)
+    ax3.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
+    fig4, ax4 = plt.subplots(1, 1, figsize=(10, 5), dpi=400)
     for i, (key, item) in zip(range(6), results.items()):
         p, r, thr = precision_recall_curve(y_test, results[key][2].T[1], pos_label=2)
         fpr, tpr, thr_ = roc_curve(y_test, results[key][2].T[1], pos_label=2)
@@ -277,6 +286,12 @@ def analysis_results(results, y_test, hp):
                           ''.format(average_precision_score(y_test, results[key][2].T[1], pos_label=2)))
         ax1.step(fpr, tpr, where='post', lw=2, color=colors[i])
         ax2.step(r, p, where='post', lw=2, color=colors[i])
+
+        # draw calibration curve
+        prob_pos = item[2].T[1]
+        fraction_of_positives, mean_predicted_value = calibration_curve(y_test, prob_pos, n_bins=5)
+        ax3.plot(mean_predicted_value, fraction_of_positives, "s-", label="%s" % (key, ))
+        ax4.hist(prob_pos, label=key, histtype='step', lw=2)
 
     ax1.legend(labels_roc, loc='lower right', prop=dict(size=14))
     ax1.set_title('Receiver Operating Characteristic curve', fontsize=14)
@@ -288,9 +303,18 @@ def analysis_results(results, y_test, hp):
     ax2.set_xlabel('Recall', fontsize=14)
     ax2.set_ylabel('Precision', fontsize=14)
     ax2.grid()
+
+    ax3.set_ylabel("Fraction of positives")
+    ax3.set_ylim([-0.05, 1.05])
+    ax3.legend(loc="lower right")
+    ax3.set_title('Calibration plots  (reliability curve)')
+
+    ax4.set_xlabel("Mean predicted value")
+    ax4.set_ylabel("Count")
+    ax4.legend(loc="upper center", ncol=2)
     # save figures
-    figs = [fig1, fig2]
-    figs_name = ['-roc', '-prc']
+    figs = [fig1, fig2, fig3, fig4]
+    figs_name = ['-roc', '-prc', '-cal', '-hist']
     # path = './results/' + dt.datetime.now().strftime('%Y%m%d-%H%M')+'-'+hp
     for i, fig in enumerate(figs):
         fig_name = figs_name[i]
@@ -330,7 +354,7 @@ if __name__ == "__main__":
               y_test_zf.reshape(len(y_test_zf), ),
               test_label_xy.reshape(len(test_data_xy), )]
     patient_id = [id_gg, id_zf, id_xy]
-    for i, hp in zip(range(3), ['gg', 'zf', 'xy']):
+    for i, hp in enumerate(['gg']):  # , 'zf', 'xy']):
         rf_results = rf(X_train, y_train, X_test[i], y_test[i])
         gbdt_results = gbdt(X_train, y_train, X_test[i], y_test[i])
         lr_results = lr(X_train, y_train, X_test[i], y_test[i])
@@ -356,5 +380,5 @@ if __name__ == "__main__":
         results2 = {
                    'SVM': svm_results,
                    'KNN': knn_results}
-        analysis_results(results1, y_test[i], hp)
-        analysis_results(results2, y_test[i], hp)
+        analysis_results(results1, X_test[i], y_test[i], hp)
+        analysis_results(results2, X_test[i], y_test[i], hp)
