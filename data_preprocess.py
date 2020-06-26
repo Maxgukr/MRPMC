@@ -102,30 +102,6 @@ def generate_train_data(filename, split_rate=0.8, delete_n_last_features=False, 
     '''
     data = pd.read_excel(filename)
 
-    # 删除特征分成了三步
-    # 1.
-    # delete features without used
-    # delete because of Clinical significance 从临床意义上删除以下特征
-    delete_features = ['SOFA score', 'Corticosteroids', 'DurationCorticosteroids',
-                       'Intravenous immunoglobin', 'Antibiotics',
-                       'carbostyril', 'cephalosporin', 'broad_spectrum',
-                       'Vasoactive', 'DurationVasoactive', 'Lac', 'LacGrade2',
-                       'Ribavirin', 'Oxygen therapy', 'DurationInterferon',
-                       'Oseltamivir', 'Arbidol', 'Lopinavir',
-                       'Detection approach', 'DurationRibavirin', 'DurationLopinavir',
-                       'DurationOseltamivir', 'DurationArbidol', 'IgM', 'IgG', 'IgGGrade2', 'IgMGrade2',
-                       'Oxygen therapy approach', 'Interferon']
-    data.drop(columns=delete_features, inplace=True)
-
-    # 2.
-    # delete Grade2 删除人为创造的分级特征Grade2
-    if delete_grade:
-        columns = data.columns.values
-        for col in columns:
-            if 'Grade2' in col:
-                data.drop(columns=[col], inplace=True)
-
-    # 3.
     # 删除特征排序中，在RF，GBDT，LR，SVM中排名最后20个中，出现三次以上的特征
     # delete last 20 features in features rank of rf,gbdt,ls, svm
     if delete_n_last_features:
@@ -202,30 +178,6 @@ def generate_data(filename, delete_n_last_features=False):
     '''
     data = pd.read_excel(filename)
 
-    # 删除特征分成了三步
-    # 1.
-    # delete features without used
-    # delete because of Clinical significance 从临床意义上删除以下特征
-    delete_features = ['SOFA score', 'Corticosteroids', 'DurationCorticosteroids',
-                       'Intravenous immunoglobin', 'Antibiotics',
-                       'carbostyril', 'cephalosporin', 'broad_spectrum',
-                       'Vasoactive', 'DurationVasoactive', 'Lac', 'LacGrade2',
-                       'Ribavirin', 'Oxygen therapy', 'DurationInterferon',
-                       'Oseltamivir', 'Arbidol', 'Lopinavir',
-                       'Detection approach', 'DurationRibavirin', 'DurationLopinavir',
-                       'DurationOseltamivir', 'DurationArbidol', 'IgM', 'IgG', 'IgGGrade2',
-                       'Oxygen therapy approach', 'IgMGrade2', 'Interferon']
-    data.drop(columns=delete_features, inplace=True)
-
-    # 2.
-    # delete Grade2 删除人为创造的分级特征Grade2
-    if delete_grade:
-        columns_ = data.columns.values
-        for col in columns_:
-            if 'Grade2' in col:
-                data.drop(columns=[col], inplace=True)
-
-    # 3.
     # delete last 20 features in features rank of rf,gbdt,ls, svm
     if delete_n_last_features:
         path = './feature_select/'+'20200509-15-58-'
