@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from data_preprocess import generate_data, generate_train_data
 import pandas as pd
 from Model import RF, GBDT, LR, KNN, SVM, StackModel, VotingModel
@@ -10,7 +12,7 @@ import os
 from statsmodels.stats.proportion import proportion_confint
 from sklearn.calibration import calibration_curve
 
-#import shap_interpretation
+import shap_interpretation
 
 
 X_train, y_train, X_test_zf, y_test_zf, id_zf = generate_train_data('./data/zfprocessed_data.csv',
@@ -211,8 +213,9 @@ def analysis_results(results, X_test, y_test, hp):
     else:
         summary = summary2
 
-    #shap_interpretation.run_shap(results, X_test, new_path, hp)
+    shap_interpretation.run_shap(results, X_test, new_path, hp)
 
+    '''
     for key, item in results.items():
         print("####################################################")
         print("/*results of ", key, "*/")
@@ -320,6 +323,7 @@ def analysis_results(results, X_test, y_test, hp):
         fig_name = figs_name[i]
         fig.tight_layout()
         fig.savefig(new_path+'/'+hp+'-'+fig_name + ".pdf", dpi=400)
+        '''
 
 
 def plot_result(feature_importance):

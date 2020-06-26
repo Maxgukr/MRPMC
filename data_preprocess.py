@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import pandas as pd
 import json
 from numpy.random import uniform
