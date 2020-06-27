@@ -12,11 +12,12 @@ from sklearn.model_selection import StratifiedKFold
 import numpy as np
 from sklearn.ensemble import VotingClassifier, StackingClassifier
 from sklearn.neural_network import MLPClassifier
-
+from numpy.random import seed
 
 class RF:
     def __init__(self, X, y, X_test, y_test):
         # super(RandomForestClassifier, self).__init__(self)
+        seed(2020)
         self.rf = RandomForestClassifier(n_estimators=120,
                                          max_depth=12,
                                          min_samples_split=10,
@@ -63,6 +64,7 @@ def rf_para_tuning(x, y):
 
 class GBDT:
     def __init__(self, X, y, X_test, y_test):
+        seed(2020)
         # super(GradientBoostingClassifier, self).__init__(self)
         self.gbdt = GradientBoostingClassifier(loss='deviance',
                                                n_estimators=150,
@@ -98,11 +100,13 @@ class GBDT:
 
 class LRl2:
     def __init__(self, X, y, X_test, y_test):
+        seed(2020)
         self.lr = LogisticRegression(penalty='l2',
                                      C=0.85,
                                      solver='liblinear',
                                      max_iter=300,
                                      class_weight={1: 1, 2: 4},
+                                     random_state=13,
                                      tol=1e-4)
         std = StandardScaler()
         self.X = std.fit_transform(X)
@@ -126,11 +130,13 @@ class LRl2:
 
 class LRl1:
     def __init__(self, X, y, X_test, y_test):
+        seed(2020)
         self.lr = LogisticRegression(penalty='l1',
                                      C=0.85,
                                      solver='liblinear',
                                      max_iter=300,
                                      class_weight={1: 1, 2: 4},
+                                     random_state=13,
                                      tol=1e-4)
         std = StandardScaler()
         self.X = std.fit_transform(X)
@@ -154,6 +160,7 @@ class LRl1:
 
 class KNN:
     def __init__(self, X, y, X_test, y_test):
+        seed(2020)
         self.knn = KNeighborsClassifier(n_neighbors=2,
                                         weights='distance',
                                         algorithm='auto',
@@ -183,6 +190,7 @@ class KNN:
 
 class SVM:
     def __init__(self, X, y, X_test, y_test):
+        seed(2020)
         self.svm = SVC(C=1.0,
                        kernel='linear',
                        degree=3,
@@ -197,7 +205,7 @@ class SVM:
                        max_iter=-1,
                        decision_function_shape='ovr',
                        break_ties=False,
-                       random_state=None)
+                       random_state=13)
         std = StandardScaler()
         self.X = std.fit_transform(X)
         self.y = y
@@ -220,12 +228,13 @@ class SVM:
 
 class MLP:
     def __init__(self, X, y, X_test, y_test):
+        seed(2020)
         self.mlp = MLPClassifier(hidden_layer_sizes=2,
                                  activation='relu',
                                  solver='sgd',
                                  learning_rate_init=0.01,
                                  max_iter=400,
-                                 random_state=2021)
+                                 random_state=13)
         std = StandardScaler()
         self.X = std.fit_transform(X)
         self.y = y
@@ -247,6 +256,7 @@ class MLP:
 
 class StackModel:
     def __init__(self):
+        seed(2020)
         self.clfs = [RandomForestClassifier(n_estimators=150,
                                             max_depth=11,
                                             min_samples_split=10,
@@ -254,7 +264,7 @@ class StackModel:
                                             criterion="gini",
                                             oob_score=True,
                                             class_weight={1: 1, 2: 4},
-                                            random_state=2029,
+                                            random_state=13,
                                             verbose=0),
                      SVC(C=1.0,
                          kernel='linear',
@@ -270,18 +280,19 @@ class StackModel:
                          max_iter=-1,
                          decision_function_shape='ovr',
                          break_ties=False,
-                         random_state=None)]
+                         random_state=13)]
         self.LR = LogisticRegression(penalty='l2',
                                      C=0.85,
                                      solver='liblinear',
                                      max_iter=300,
                                      class_weight={1: 1, 2: 4},
+                                     random_state=13,
                                      tol=1e-4)
 
         self.RF = RandomForestClassifier(n_estimators=80,
                                          criterion="gini",
                                          class_weight={1: 1, 2: 2.5},
-                                         random_state=1994,
+                                         random_state=13,
                                          verbose=0)
 
         self.GBDT = GradientBoostingClassifier()
@@ -320,6 +331,7 @@ class StackModel:
 
 class VotingModel:
     def __init__(self):
+        seed(2020)
         self.rf = RandomForestClassifier(n_estimators=100,
                                          max_depth=13,
                                          min_samples_split=10,
@@ -342,6 +354,7 @@ class VotingModel:
                                      solver='liblinear',
                                      max_iter=300,
                                      # class_weight={1: 1, 2: 5},
+                                     random_state=13,
                                      tol=1e-4)
         self.svm = SVC(C=1.0,
                        kernel='linear',
@@ -357,7 +370,7 @@ class VotingModel:
                        max_iter=300,
                        decision_function_shape='ovr',
                        break_ties=False,
-                       random_state=None)
+                       random_state=13)
         self.eclfs = VotingClassifier(estimators=[('rf', self.rf),
                                                   ('gbdt', self.gbdt),
                                                   ('lr', self.lr),

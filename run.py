@@ -7,9 +7,10 @@ from sklearn.metrics import classification_report, accuracy_score, precision_rec
     f1_score, roc_curve, average_precision_score, auc, confusion_matrix, precision_score, recall_score
 import datetime as dt
 import os
+from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.proportion import proportion_confint
 from sklearn.calibration import calibration_curve
-
+from sklearn.externals import joblib
 import shap_interpretation
 
 X_train, y_train, X_test_zf, y_test_zf, id_zf = generate_train_data('./data_clx/SF.xlsx',
@@ -362,7 +363,6 @@ def analysis_results(results, y_test, hp):
         ax3.plot(mean_predicted_value, fraction_of_positives, "s-", label="%s" % (key, ))
         ax4.hist(prob_pos, label=key, histtype='step', lw=2)
 
-
     ax1.legend(labels_roc, loc='lower right', prop=dict(size=14))
     ax1.set_title('Receiver Operating Characteristic curve', fontsize=14)
     ax1.set_xlabel('FPR', fontsize=14)
@@ -377,10 +377,6 @@ def analysis_results(results, y_test, hp):
     ax3.set_ylim([-0.05, 1.05])
     ax3.legend(loc="lower right")
     ax3.set_title('Calibration plots  (reliability curve)')
-
-
-
-
     ax4.set_xlabel("Mean predicted value")
     ax4.set_ylabel("Count")
     ax4.legend(loc="upper center", ncol=2)
@@ -392,9 +388,6 @@ def analysis_results(results, y_test, hp):
         fig_name = figs_name[i]
         fig.tight_layout()
         fig.savefig(new_path+'/'+hp+'-'+fig_name + ".pdf", dpi=400)
-
-
-
 
 
 if __name__ == "__main__":
