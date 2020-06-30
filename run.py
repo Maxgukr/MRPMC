@@ -13,12 +13,12 @@ from sklearn.calibration import calibration_curve
 from sklearn.externals import joblib
 import shap_interpretation
 
-X_train, y_train, X_test_zf, y_test_zf, id_zf = generate_train_data('./data_clx/SF.xlsx',
+X_train, y_train, X_test_zf, y_test_zf, id_zf = generate_train_data('./data_filter30_svdimpute/SF.xlsx',
                                                                     delete_n_last_features=False,
                                                                     over_sample=False)
-test_data_gg, test_label_gg, columns, id_gg = generate_data('./data_clx/OV.xlsx',
+test_data_gg, test_label_gg, columns, id_gg = generate_data('./data_filter30_svdimpute/OV.xlsx',
                                                             delete_n_last_features=False)
-test_data_xy, test_label_xy, _, id_xy = generate_data('./data_clx/CHWH.xlsx',
+test_data_xy, test_label_xy, _, id_xy = generate_data('./data_filter30_svdimpute/CHWH.xlsx',
                                                       delete_n_last_features=False)
 
 # 结果路径
