@@ -37,7 +37,7 @@ def gbdt(X_train, y_train, X_test, y_test):
     # train
     gbdt_feature_importance, estimator_score = gbdt.gbdt_train()
     # save model
-    joblib.dump(gbdt.gbdt, save_models+'/gbdt.pkl')
+    joblib.dump(gbdt.model, save_models + '/gbdt.pkl')
     # predict
     gbdt_predict_result = gbdt.gbdt_predict()
     # predict probability
@@ -64,7 +64,7 @@ def rf(X_train, y_train, X_test, y_test):
     # train
     rf_feature_importance, oob_score = rf.rf_train()
     # save model
-    joblib.dump(rf.rf, save_models+'/rf.pkl')
+    joblib.dump(rf.model, save_models + '/rf.pkl')
     # predict
     rf_predict_result = rf.rf_predict()
     # predict probability
@@ -90,7 +90,7 @@ def lrl2(X_train, y_train, X_test, y_test):
     # train
     lr_coef_ = lr.lr_train()
     # save model
-    joblib.dump(lr.lr, save_models+'/lrl2.pkl')
+    joblib.dump(lr.model, save_models + '/lrl2.pkl')
     # predict
     lr_predict = lr.lr_predict()
     # predict probability
@@ -113,7 +113,7 @@ def lrl1(X_train, y_train, X_test, y_test):
     # train
     lr_coef_ = lr.lr_train()
     # save model
-    joblib.dump(lr.lr, save_models+'/lrl1.pkl')
+    joblib.dump(lr.model, save_models + '/lrl1.pkl')
     # predict
     lr_predict = lr.lr_predict()
     # predict probability
@@ -136,7 +136,7 @@ def knn(X_train, y_train, X_test, y_test):
     # train
     knn.knn_train()
     # save model
-    joblib.dump(knn.knn, save_models+'/knn.pkl')
+    joblib.dump(knn.model, save_models + '/knn.pkl')
     # predict
     knn_predict = knn.knn_predict()
     # predict probability
@@ -151,7 +151,7 @@ def svm(X_train, y_train, X_test, y_test):
     # train
     svm_coef_ = svm.svm_train()
     # save model
-    joblib.dump(svm.svm, save_models+'/svm.pkl')
+    joblib.dump(svm.model, save_models + '/svm.pkl')
     # predict
     svm_predict = svm.svm_predict()
     # predict confidence
@@ -173,7 +173,7 @@ def mlp(X_train, y_train, X_test, y_test):
     # mlp train
     mlp.mlp_train()
     # save model
-    joblib.dump(mlp.mlp, save_models+'/mlp.pkl')
+    joblib.dump(mlp.model, save_models + '/mlp.pkl')
     # predict
     mlp_predict = mlp.mlp_predict()
     # predict probability

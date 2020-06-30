@@ -18,37 +18,37 @@ class RF:
     def __init__(self, X, y, X_test, y_test):
         # super(RandomForestClassifier, self).__init__(self)
         seed(2020)
-        self.rf = RandomForestClassifier(n_estimators=120,
-                                         max_depth=12,
-                                         min_samples_split=10,
-                                         min_samples_leaf=10,
-                                         criterion="gini",
-                                         oob_score=True,
-                                         class_weight={1: 1, 2: 5},
-                                         random_state=13,
-                                         verbose=0)
+        self.model = RandomForestClassifier(n_estimators=120,
+                                            max_depth=12,
+                                            min_samples_split=10,
+                                            min_samples_leaf=10,
+                                            criterion="gini",
+                                            oob_score=True,
+                                            class_weight={1: 1, 2: 5},
+                                            random_state=13,
+                                            verbose=0)
         self.X = X
         self.y = y
         self.X_test = X_test
         self.y_test = y_test
 
     def rf_train(self):
-        self.rf.fit(self.X, self.y)
-        return self.rf.feature_importances_, self.rf.oob_score_
+        self.model.fit(self.X, self.y)
+        return self.model.feature_importances_, self.model.oob_score_
 
     def rf_predict(self):
-        result = self.rf.predict(self.X_test)
+        result = self.model.predict(self.X_test)
         return result
 
     def rf_predict_prob(self):
-        result = self.rf.predict_proba(self.X_test)
+        result = self.model.predict_proba(self.X_test)
         return result
 
     def rf_score(self):
-        return self.rf.score(self.X_test, self.y_test)
+        return self.model.score(self.X_test, self.y_test)
 
     def rf_save(self):
-        joblib.dump(self.rf, 'model/rf.pkl')
+        joblib.dump(self.model, 'model/rf.pkl')
 
 
 def rf_para_tuning(x, y):
@@ -66,16 +66,16 @@ class GBDT:
     def __init__(self, X, y, X_test, y_test):
         seed(2020)
         # super(GradientBoostingClassifier, self).__init__(self)
-        self.gbdt = GradientBoostingClassifier(loss='deviance',
-                                               n_estimators=150,
-                                               learning_rate=0.05,
-                                               subsample=0.8,
-                                               min_samples_split=6,
-                                               min_samples_leaf=4,
-                                               criterion='friedman_mse',
-                                               max_depth=13,
-                                               random_state=13,
-                                               verbose=0)
+        self.model = GradientBoostingClassifier(loss='deviance',
+                                                n_estimators=150,
+                                                learning_rate=0.05,
+                                                subsample=0.8,
+                                                min_samples_split=6,
+                                                min_samples_leaf=4,
+                                                criterion='friedman_mse',
+                                                max_depth=13,
+                                                random_state=13,
+                                                verbose=0)
         std = StandardScaler()
         self.X = std.fit_transform(X)
         self.y = y
@@ -83,31 +83,31 @@ class GBDT:
         self.y_test = y_test
 
     def gbdt_train(self):
-        self.gbdt.fit(self.X, self.y)
-        return self.gbdt.feature_importances_, self.gbdt.train_score_
+        self.model.fit(self.X, self.y)
+        return self.model.feature_importances_, self.model.train_score_
 
     def gbdt_predict(self):
-        result = self.gbdt.predict(self.X_test)
+        result = self.model.predict(self.X_test)
         return result
 
     def gbdt_predict_prob(self):
-        result = self.gbdt.predict_proba(self.X_test)
+        result = self.model.predict_proba(self.X_test)
         return result
 
     def gbdt_score(self):
-        return self.gbdt.score(self.X_test, self.y_test)
+        return self.model.score(self.X_test, self.y_test)
 
 
 class LRl2:
     def __init__(self, X, y, X_test, y_test):
         seed(2020)
-        self.lr = LogisticRegression(penalty='l2',
-                                     C=0.85,
-                                     solver='liblinear',
-                                     max_iter=300,
-                                     class_weight={1: 1, 2: 4},
-                                     random_state=13,
-                                     tol=1e-4)
+        self.model = LogisticRegression(penalty='l2',
+                                        C=0.85,
+                                        solver='liblinear',
+                                        max_iter=300,
+                                        class_weight={1: 1, 2: 4},
+                                        random_state=13,
+                                        tol=1e-4)
         std = StandardScaler()
         self.X = std.fit_transform(X)
         self.y = y
@@ -115,29 +115,29 @@ class LRl2:
         self.y_test = y_test
 
     def lr_train(self):
-        self.lr.fit(self.X, self.y)
-        return self.lr.coef_
+        self.model.fit(self.X, self.y)
+        return self.model.coef_
 
     def lr_predict(self):
-        return self.lr.predict(self.X_test)
+        return self.model.predict(self.X_test)
 
     def lr_predict_proba(self):
-        return self.lr.predict_proba(self.X_test)
+        return self.model.predict_proba(self.X_test)
 
     def lr_score(self):
-        return self.lr.score(self.X_test, self.y_test)
+        return self.model.score(self.X_test, self.y_test)
 
 
 class LRl1:
     def __init__(self, X, y, X_test, y_test):
         seed(2020)
-        self.lr = LogisticRegression(penalty='l1',
-                                     C=0.85,
-                                     solver='liblinear',
-                                     max_iter=300,
-                                     class_weight={1: 1, 2: 4},
-                                     random_state=13,
-                                     tol=1e-4)
+        self.model = LogisticRegression(penalty='l1',
+                                        C=0.85,
+                                        solver='liblinear',
+                                        max_iter=300,
+                                        class_weight={1: 1, 2: 4},
+                                        random_state=13,
+                                        tol=1e-4)
         std = StandardScaler()
         self.X = std.fit_transform(X)
         self.y = y
@@ -145,30 +145,30 @@ class LRl1:
         self.y_test = y_test
 
     def lr_train(self):
-        self.lr.fit(self.X, self.y)
-        return self.lr.coef_
+        self.model.fit(self.X, self.y)
+        return self.model.coef_
 
     def lr_predict(self):
-        return self.lr.predict(self.X_test)
+        return self.model.predict(self.X_test)
 
     def lr_predict_proba(self):
-        return self.lr.predict_proba(self.X_test)
+        return self.model.predict_proba(self.X_test)
 
     def lr_score(self):
-        return self.lr.score(self.X_test, self.y_test)
+        return self.model.score(self.X_test, self.y_test)
 
 
 class KNN:
     def __init__(self, X, y, X_test, y_test):
         seed(2020)
-        self.knn = KNeighborsClassifier(n_neighbors=2,
-                                        weights='distance',
-                                        algorithm='auto',
-                                        leaf_size=30,
-                                        p=2,
-                                        metric='minkowski',
-                                        metric_params=None,
-                                        n_jobs=None)
+        self.model = KNeighborsClassifier(n_neighbors=2,
+                                          weights='distance',
+                                          algorithm='auto',
+                                          leaf_size=30,
+                                          p=2,
+                                          metric='minkowski',
+                                          metric_params=None,
+                                          n_jobs=None)
         std = StandardScaler()
         self.X = std.fit_transform(X)
         self.y = y
@@ -176,36 +176,36 @@ class KNN:
         self.y_test = y_test
 
     def knn_train(self):
-        self.knn.fit(self.X, self.y)
+        self.model.fit(self.X, self.y)
 
     def knn_predict(self):
-        return self.knn.predict(self.X_test)
+        return self.model.predict(self.X_test)
 
     def knn_predict_proba(self):
-        return self.knn.predict_proba(self.X_test)
+        return self.model.predict_proba(self.X_test)
 
     def score(self):
-        return self.knn.score(self.X_test, self.y_test)
+        return self.model.score(self.X_test, self.y_test)
 
 
 class SVM:
     def __init__(self, X, y, X_test, y_test):
         seed(2020)
-        self.svm = SVC(C=1.0,
-                       kernel='linear',
-                       degree=3,
-                       gamma='scale',
-                       coef0=0.0,
-                       shrinking=True,
-                       probability=True,
-                       tol=0.001,
-                       cache_size=200,
-                       class_weight={1: 1, 2: 3},
-                       verbose=False,
-                       max_iter=-1,
-                       decision_function_shape='ovr',
-                       break_ties=False,
-                       random_state=13)
+        self.model = SVC(C=1.0,
+                         kernel='linear',
+                         degree=3,
+                         gamma='scale',
+                         coef0=0.0,
+                         shrinking=True,
+                         probability=True,
+                         tol=0.001,
+                         cache_size=200,
+                         class_weight={1: 1, 2: 3},
+                         verbose=False,
+                         max_iter=-1,
+                         decision_function_shape='ovr',
+                         break_ties=False,
+                         random_state=13)
         std = StandardScaler()
         self.X = std.fit_transform(X)
         self.y = y
@@ -213,28 +213,28 @@ class SVM:
         self.y_test = y_test
 
     def svm_train(self):
-        self.svm.fit(self.X, self.y)
-        return self.svm.coef_
+        self.model.fit(self.X, self.y)
+        return self.model.coef_
 
     def svm_predict(self):
-        return self.svm.predict(self.X_test)
+        return self.model.predict(self.X_test)
 
     def svm_predict_confidence(self):
-        return self.svm.predict_proba(self.X_test)
+        return self.model.predict_proba(self.X_test)
 
     def svm_score(self):
-        return self.svm.score(self.X_test, self.y_test)
+        return self.model.score(self.X_test, self.y_test)
 
 
 class MLP:
     def __init__(self, X, y, X_test, y_test):
         seed(2020)
-        self.mlp = MLPClassifier(hidden_layer_sizes=2,
-                                 activation='relu',
-                                 solver='sgd',
-                                 learning_rate_init=0.01,
-                                 max_iter=400,
-                                 random_state=13)
+        self.model = MLPClassifier(hidden_layer_sizes=2,
+                                   activation='relu',
+                                   solver='sgd',
+                                   learning_rate_init=0.01,
+                                   max_iter=400,
+                                   random_state=13)
         std = StandardScaler()
         self.X = std.fit_transform(X)
         self.y = y
@@ -242,31 +242,31 @@ class MLP:
         self.y_test = y_test
 
     def mlp_train(self):
-        self.mlp.fit(self.X, self.y)
+        self.model.fit(self.X, self.y)
 
     def mlp_predict(self):
-        return self.mlp.predict(self.X_test)
+        return self.model.predict(self.X_test)
 
     def mlp_predict_prob(self):
-        return self.mlp.predict_proba(self.X_test)
+        return self.model.predict_proba(self.X_test)
 
     def mlp_score(self):
-        return self.mlp.score(self.X_test, self.y_test)
+        return self.model.score(self.X_test, self.y_test)
 
 
 class StackModel:
     def __init__(self):
         seed(2020)
-        self.clfs = [RandomForestClassifier(n_estimators=150,
-                                            max_depth=11,
-                                            min_samples_split=10,
-                                            min_samples_leaf=10,
-                                            criterion="gini",
-                                            oob_score=True,
-                                            class_weight={1: 1, 2: 4},
-                                            random_state=13,
-                                            verbose=0),
-                     SVC(C=1.0,
+        self.model = [RandomForestClassifier(n_estimators=150,
+                                             max_depth=11,
+                                             min_samples_split=10,
+                                             min_samples_leaf=10,
+                                             criterion="gini",
+                                             oob_score=True,
+                                             class_weight={1: 1, 2: 4},
+                                             random_state=13,
+                                             verbose=0),
+                      SVC(C=1.0,
                          kernel='linear',
                          degree=3,
                          gamma='scale',
@@ -299,10 +299,10 @@ class StackModel:
 
     def train(self, X, y):
         y = y.reshape(len(y), )
-        blend_train = np.zeros((X.shape[0], len(self.clfs)))
+        blend_train = np.zeros((X.shape[0], len(self.model)))
         n_folds = 5
         skf = StratifiedKFold(n_folds)
-        for j, clf in enumerate(self.clfs):
+        for j, clf in enumerate(self.model):
             '''training every single model'''
             for i, (train, test) in enumerate(skf.split(X, y)):
                 '''part i as predicting, the rest as training. predicting result of part ad new feature'''
@@ -314,10 +314,10 @@ class StackModel:
             self.LR.fit(blend_train, y)
 
     def predict_proba(self, X, y):
-        blend_test = np.zeros((X.shape[0], len(self.clfs)))
+        blend_test = np.zeros((X.shape[0], len(self.model)))
         n_folds = 5
         skf = StratifiedKFold(n_folds)
-        for j, clf in enumerate(self.clfs):
+        for j, clf in enumerate(self.model):
             '''training every single model'''
             blend_test_j = np.zeros((X.shape[0], skf.get_n_splits(X, y)))
             for i, (train, test) in enumerate(skf.split(X, y)):
@@ -332,28 +332,28 @@ class StackModel:
 class VotingModel:
     def __init__(self):
         seed(2020)
-        self.rf = RandomForestClassifier(n_estimators=100,
-                                         max_depth=13,
+        self.rf = RandomForestClassifier(n_estimators=120,
+                                         max_depth=12,
                                          min_samples_split=10,
                                          min_samples_leaf=10,
                                          criterion="gini",
                                          oob_score=True,
-                                         # class_weight={1: 1, 2: 5},
+                                         class_weight={1: 1, 2: 5},
                                          random_state=13,
                                          verbose=0)
         self.gbdt = GradientBoostingClassifier(loss='deviance',
-                                               n_estimators=170,
+                                               n_estimators=150,
                                                learning_rate=0.05,
-                                               subsample=0.7,
+                                               subsample=0.8,
                                                criterion='friedman_mse',
-                                               max_depth=11,
+                                               max_depth=13,
                                                random_state=13,
                                                verbose=0)
         self.lr = LogisticRegression(penalty='l2',
                                      C=0.85,
                                      solver='liblinear',
                                      max_iter=300,
-                                     # class_weight={1: 1, 2: 5},
+                                     class_weight={1: 1, 2: 4},
                                      random_state=13,
                                      tol=1e-4)
         self.svm = SVC(C=1.0,
@@ -365,13 +365,13 @@ class VotingModel:
                        probability=True,
                        tol=0.001,
                        cache_size=200,
-                       class_weight={1: 1, 2: 4},
+                       class_weight={1: 1, 2: 3},
                        verbose=False,
                        max_iter=300,
                        decision_function_shape='ovr',
                        break_ties=False,
                        random_state=13)
-        self.eclfs = VotingClassifier(estimators=[('rf', self.rf),
+        self.model = VotingClassifier(estimators=[('rf', self.rf),
                                                   ('gbdt', self.gbdt),
                                                   ('lr', self.lr),
                                                   ('svm', self.svm)],
@@ -379,10 +379,10 @@ class VotingModel:
                                       weights=[1, 0.7, 0.8, 0.8])
 
     def train(self, X, y):
-        self.eclfs.fit(X, y)
+        self.model.fit(X, y)
 
     def predict(self, X_test):
-        return self.eclfs.predict(X_test)
+        return self.model.predict(X_test)
 
     def predict_proba(self, X_test):
         return self.predict_proba(X_test)
