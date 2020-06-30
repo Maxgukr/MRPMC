@@ -8,7 +8,7 @@ from sklearn.utils import shuffle
 from collections import Counter
 import datetime as dt
 from imblearn.over_sampling import SMOTENC
-
+from numpy.random import seed
 
 # 这个文件不用管
 def load_data(file_name, feature_map):
@@ -113,9 +113,8 @@ def generate_train_data(filename, split_rate=0.8, delete_n_last_features=False, 
                                              20,
                                              3)
         data.drop(columns=n_last_delete, inplace=True)
-        data.to_excel(filename + '-COVID_delete_n_last_features.xlsx', index=False)
+        data.to_excel(filename.split('.')[0] + '-COVID_delete_n_last_features.xlsx', index=False)
 
-    data.to_excel(filename + '-COVID_FillNan_delete_features.xlsx', index=False)
     df_death = data.loc[data.Death == 2]
     df_live = data.loc[data.Death == 1]
 
@@ -131,11 +130,12 @@ def generate_train_data(filename, split_rate=0.8, delete_n_last_features=False, 
     df_live_test = df_live[live_split_index:]
 
     # 将train需要的死亡数据与训练用的出院数据合并再打散顺序
+    seed(2020)
     df_train = pd.concat([df_death_train, df_live_train], axis=0)
-    df_train = shuffle(df_train)
+    df_train = shuffle(df_train, random_state=13)
     # 将test需要的死亡数据与训练用的出院数据合并再打散顺序
     df_test = pd.concat([df_death_test, df_live_test], axis=0)
-    df_test = shuffle(df_test)
+    df_test = shuffle(df_test, random_state=13)
 
     # 获得train数据和test数据的label y_train, y_test
     y_train = df_train.get(['Death']).values.reshape(len(df_train), 1)
@@ -144,7 +144,7 @@ def generate_train_data(filename, split_rate=0.8, delete_n_last_features=False, 
     id1 = df_test.get(['ID']).values.reshape(len(df_test), 1)
 
     # 获得train数据和test数据的输入，x_train，x_test
-    df_test.to_excel('./data_description/'+dt.datetime.now().strftime('%Y%m%d-%H-%M')+'-zf_test.xlsx', index=False)
+    # df_test.to_excel('./data_description/'+dt.datetime.now().strftime('%Y%m%d-%H-%M')+'-zf_test.xlsx', index=False)
     df_test.drop(columns=['Death', 'ID'], inplace=True)
     # x_train = df_train.values
     # x_test = df_test.values
@@ -157,7 +157,7 @@ def generate_train_data(filename, split_rate=0.8, delete_n_last_features=False, 
         smo = SMOTENC(categorical_features=[1, 2, 3, 7, 8, 9, 10, 38, 39],
                       sampling_strategy=0.5,
                       random_state=42)
-        X_train, y_train = smo.fit_sample(x_train, y_train)
+        X_train, y_train = smo.fit_sample(df_train, y_train)
         # print(Counter(y_smo.reshape(len(y_smo, )).tolist()))
         df_train_smo = pd.DataFrame(data=np.hstack((X_train, y_train.reshape(len(y_train), 1))),
                                     columns=data.drop(columns=['ID']).columns.values.tolist())
@@ -188,7 +188,7 @@ def generate_data(filename, delete_n_last_features=False):
                                              20,
                                              3)
         data.drop(columns=n_last_delete, inplace=True)
-        data.to_excel(filename+'-COVID_after_delete_n_last_features.xlsx', index=False)
+        # data.to_excel(filename+'-COVID_after_delete_n_last_features.xlsx', index=False)
 
     index = data.index[np.where(np.isnan(data))[0]].values
     assert len(index) == 0
