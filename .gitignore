@@ -1,2 +1,5 @@
 /.idea
 /__pycache__
+/feature_select
+/results
+/save_models
