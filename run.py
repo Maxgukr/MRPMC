@@ -14,17 +14,19 @@ import joblib
 import shap_interpretation
 from numpy.random import seed
 
+
 # fixed random seed
 seed(2020)
 
 
 X_train, y_train, X_test_zf, y_test_zf, id_zf = generate_train_data('./data_filter30_svdimpute/SF.xlsx',
-                                                                    delete_n_last_features=False,
-                                                                    over_sample=False)
+                                                                    delete_n_last_features=False)
 test_data_gg, test_label_gg, columns, id_gg = generate_data('./data_filter30_svdimpute/OV.xlsx',
-                                                            delete_n_last_features=False)
+                                                            delete_n_last_features=False
+                                                            )
 test_data_xy, test_label_xy, _, id_xy = generate_data('./data_filter30_svdimpute/CHWH.xlsx',
-                                                      delete_n_last_features=False)
+                                                      delete_n_last_features=False
+                                                      )
 
 # 结果路径
 path = './results/'+dt.datetime.now().strftime('%Y%m%d-%H-%M')
@@ -34,7 +36,7 @@ save_models = './save_models'
 os.makedirs(save_models, exist_ok=True)
 
 
-def gbdt(X_train, y_train, X_test, y_test):
+def gbdt(X_train, y_train, X_test, y_test, save=True):
     # GBDT
     gbdt = GBDT(X_train, y_train, X_test, y_test)
     # train
@@ -54,14 +56,16 @@ def gbdt(X_train, y_train, X_test, y_test):
     df_gbdt_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     # df_rf_feature_importance.loc[0, df_rf_feature_importance.columns.values[:30]].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
-    df_gbdt_feature_importance.to_excel('feature_select/'+'gbdt_feature_importance.xlsx', index=False)
+    if save:
+        df_gbdt_feature_importance.to_excel('feature_select/'+'gbdt_feature_importance'+str(X_train.shape[1])+'.xlsx',
+                                            index=False)
 
     print("gradient boost get score:", gbdt_score)
 
     return [gbdt, gbdt_predict_result, gbdt_predict_result_prob]
 
 
-def rf(X_train, y_train, X_test, y_test):
+def rf(X_train, y_train, X_test, y_test, save=True):
     # RF
     rf = RF(X_train, y_train, X_test, y_test)
     # train
@@ -77,17 +81,19 @@ def rf(X_train, y_train, X_test, y_test):
 
     # save rf feature importance
     df_rf_feature_importance = pd.DataFrame(data=rf_feature_importance.reshape(1, len(rf_feature_importance)),
-                                            columns=list(columns))
+                                            columns=list(X_train.columns.values))
     df_rf_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     # df_rf_feature_importance.loc[0, df_rf_feature_importance.columns.values[:30]].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
-    df_rf_feature_importance.to_excel('feature_select/'+'rf_feature_importance.xlsx', index=False)
+    if save:
+        df_rf_feature_importance.to_excel('feature_select/'+'rf_feature_importance'+str(X_train.shape[1])+'.xlsx',
+                                          index=False)
     print("random forest get score:", rf_score)
 
     return [rf, rf_predict_result, rf_predict_result_prob]
 
 
-def lrl2(X_train, y_train, X_test, y_test):
+def lrl2(X_train, y_train, X_test, y_test, save=True):
     # lr
     lr = LRl2(X_train, y_train, X_test, y_test)
     # train
@@ -101,16 +107,18 @@ def lrl2(X_train, y_train, X_test, y_test):
 
     # save rf feature importance
     df_lr_feature_importance = pd.DataFrame(data=np.abs(lr_coef_),
-                                            columns=list(columns))
+                                            columns=list(X_train.columns.values))
     df_lr_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     # df_lr_feature_importance.loc[0, df_lr_feature_importance.columns.values].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
-    df_lr_feature_importance.to_excel('feature_select/'+'lrl2_feature_importance.xlsx', index=False)
+    if save:
+        df_lr_feature_importance.to_excel('feature_select/'+'lrl2_feature_importance'+str(X_train.shape[1])+'.xlsx',
+                                          index=False)
     print("lr L2 get score:", lr.lr_score())
     return [lr, lr_predict, lr_predict_proba]
 
 
-def lrl1(X_train, y_train, X_test, y_test):
+def lrl1(X_train, y_train, X_test, y_test, save=True):
     # lr
     lr = LRl1(X_train, y_train, X_test, y_test)
     # train
@@ -124,11 +132,13 @@ def lrl1(X_train, y_train, X_test, y_test):
 
     # save rf feature importance
     df_lr_feature_importance = pd.DataFrame(data=np.abs(lr_coef_),
-                                            columns=list(columns))
+                                            columns=list(X_train.columns.values))
     df_lr_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     # df_lr_feature_importance.loc[0, df_lr_feature_importance.columns.values].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
-    df_lr_feature_importance.to_excel('feature_select/'+'lrl1_feature_importance.xlsx', index=False)
+    if save:
+        df_lr_feature_importance.to_excel('feature_select/'+'lrl1_feature_importance'+str(X_train.shape[1])+'.xlsx',
+                                          index=False)
     print("lr L1 get score:", lr.lr_score())
     return [lr, lr_predict, lr_predict_proba]
 
@@ -148,7 +158,7 @@ def knn(X_train, y_train, X_test, y_test):
     return [knn, knn_predict, knn_predict_proba]
 
 
-def svm(X_train, y_train, X_test, y_test):
+def svm(X_train, y_train, X_test, y_test, save=True):
     # svc
     svm = SVM(X_train, y_train, X_test, y_test)
     # train
@@ -160,11 +170,13 @@ def svm(X_train, y_train, X_test, y_test):
     # predict confidence
     svm_confidence = svm.svm_predict_confidence()
     df_svm_feature_importance = pd.DataFrame(data=np.abs(svm_coef_),
-                                             columns=list(columns))
+                                             columns=list(X_train.columns.values))
     df_svm_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     # df_svm_feature_importance.loc[0, df_svm_feature_importance.columns.values].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
-    df_svm_feature_importance.to_excel('feature_select/'+'svm_feature_importance.xlsx', index=False)
+    if save:
+        df_svm_feature_importance.to_excel('feature_select/'+'svm_feature_importance'+str(X_train.shape[1])+'.xlsx',
+                                           index=False)
 
     print("svm get score:", svm.svm_score())
     return [svm, svm_predict, svm_confidence]
@@ -240,7 +252,7 @@ def voting(rf, lr, svm, weights, mode='soft'):  #svm,
 
 summary1 = pd.DataFrame(data=np.zeros((19, 18)),
                         columns=pd.MultiIndex.from_product([['gg', 'zf', 'xy'],
-                                                            ['MRPMC', 'MRPMC-1', 'RF', 'LRl2', 'SVM', 'MLP']]),
+                                                            ['MRPMC', 'MRPMC-1', 'RF', 'LR', 'SVM', 'MLP']]),
                        index=['AUC',
                               'AUC-95%-CI-low',
                               'AUC-95%-CI-up',
@@ -298,11 +310,7 @@ def analysis_results(results, y_test, hp):
         summary = summary2
 
     for key, item in results.items():
-        print("####################################################")
-        print("/*results of ", key, "*/")
-        print("confusion_matrix:")
         m = confusion_matrix(y_test - 1, results[key][1] - 1, labels=[1, 0])
-        print(m)
         summary.loc['TP'][hp, key] = m[0][0]
         summary.loc['FN'][hp, key] = m[0][1]
         summary.loc['FP'][hp, key] = m[1][0]
@@ -341,10 +349,8 @@ def analysis_results(results, y_test, hp):
             q2 = 2 * area ** 2 / (1 + area)
             return np.sqrt((area * (1 - area) + (n1 - 1) * (q1 - area ** 2) + (n2 - 1) * (q2 - area ** 2)) / (n1 * n2))
         se = se_auc(area, m[0][0]+m[0][1], m[1][0]+m[1][1])
-        # print("AUC 95% confidence interval:", area-1.96*se, min(area+1.96*se, 1.0))
         summary.loc['AUC-95%-CI-low'][hp, key] = area-1.96*se
         summary.loc['AUC-95%-CI-up'][hp, key] = min(area+1.96*se, 1.0)
-        print("####################################################")
     summary.to_excel(new_path+'/'+'-'+str(len(results))+'-summary.xlsx')
 
     # 绘制ROC、PRC、混淆矩阵
@@ -392,7 +398,6 @@ def analysis_results(results, y_test, hp):
     # save figures
     figs = [fig1, fig2, fig3, fig4]
     figs_name = ['-roc', '-prc', '-cal', '-hist']
-    # path = './results/' + dt.datetime.now().strftime('%Y%m%d-%H%M')+'-'+hp
     for i, fig in enumerate(figs):
         fig_name = figs_name[i]
         fig.tight_layout()
@@ -416,7 +421,7 @@ if __name__ == "__main__":
         mlp_results = mlp(X_train, y_train, X_test[i], y_test[i])
         # stack method
         stack_results = stack_models(X_train, y_train, X_test[i], y_test[i])
-        # voting method'
+        # voting method
         vote_results = voting(rf_results[2],
                               lrl2_results[2],
                               svm_results[2],
@@ -428,7 +433,7 @@ if __name__ == "__main__":
         predict = np.hstack((vote_results[1].reshape(len(stack_results[1]), 1), patient_id[i]))
         predict_res = pd.DataFrame(predict, columns=['label', 'id'])
         predict_res.to_excel(path+'/'+hp+'-'+'-predict-results.xlsx', index=False)
-        results1 = {# 'StackModel': stack_results,
+        results1 = {
                     'MRPMC': vote_results,
                     'MRPMC-1': vote_with_mlp,
                     'RF': rf_results,
@@ -441,7 +446,7 @@ if __name__ == "__main__":
                    'MLP': mlp_results,
                    'SVM': svm_results,
                    'KNN': knn_results}
-                   '''
+        '''
         # save shap results
         os.makedirs(path+'/shape', exist_ok=True)
         # shap_interpretation.run_shap(results1, X_test[i], path+'/shape', hp)
