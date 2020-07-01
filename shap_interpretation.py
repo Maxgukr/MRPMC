@@ -12,5 +12,5 @@ def run_shap(results, X_test, new_path, hp):
         explainer = shap.KernelExplainer(model.model.predict, k_X)
         shap_values = explainer.shap_values(X_test)
         f = plt.figure()
-        shap.summary_plot(shap_values, X_test)
+        shap.summary_plot(shap_values, X_test, show=False)
         f.savefig(new_path + "/" + hp + '-' + key + "-summary_plot.pdf", bbox_inches='tight', dpi=600)
