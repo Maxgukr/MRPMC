@@ -7,8 +7,9 @@ import math
 from sklearn.utils import shuffle
 from collections import Counter
 import datetime as dt
-from imblearn.over_sampling import SMOTENC
+# from imblearn.over_sampling import SMOTENC
 from numpy.random import seed
+
 
 # 这个文件不用管
 def load_data(file_name, feature_map):
@@ -151,6 +152,7 @@ def generate_train_data(filename, split_rate=0.8, delete_n_last_features=False, 
 
     # using over sampling or not for few label
     # 是否采用SMOTENC算法对样本较少的死亡样本进行人工扩充（生成伪死亡样本）
+    '''
     if over_sample:
         # print(Counter(y_train.reshape(len(y_train, )).tolist()))
         # using SOMTENC for over sample
@@ -165,6 +167,7 @@ def generate_train_data(filename, split_rate=0.8, delete_n_last_features=False, 
         y_train = df_train_smo.get(['Death']).values
         df_train_smo.drop(columns=['Death'], inplace=True)
         x_train = df_train_smo.values
+    '''
 
     return df_train, y_train, df_test, y_test, id1
 
