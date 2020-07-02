@@ -86,7 +86,7 @@ def rf(X_train, y_train, X_test, y_test, save=True):
     # df_rf_feature_importance.loc[0, df_rf_feature_importance.columns.values[:30]].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
     if save:
-        df_rf_feature_importance.to_excel('feature_select/'+'rf_feature_importance'+str(X_train.shape[1])+'.xlsx',
+        df_rf_feature_importance.to_excel('feature_select/method2/'+'rf_feature_importance_'+str(X_train.shape[1])+'.xlsx',
                                           index=False)
     print("random forest get score:", rf_score)
 
@@ -112,7 +112,7 @@ def lrl2(X_train, y_train, X_test, y_test, save=True):
     # df_lr_feature_importance.loc[0, df_lr_feature_importance.columns.values].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
     if save:
-        df_lr_feature_importance.to_excel('feature_select/'+'lrl2_feature_importance'+str(X_train.shape[1])+'.xlsx',
+        df_lr_feature_importance.to_excel('feature_select/method2/'+'lrl2_feature_importance_'+str(X_train.shape[1])+'.xlsx',
                                           index=False)
     print("lr L2 get score:", lr.lr_score())
     return [lr, lr_predict, lr_predict_proba]
@@ -175,7 +175,7 @@ def svm(X_train, y_train, X_test, y_test, save=True):
     # df_svm_feature_importance.loc[0, df_svm_feature_importance.columns.values].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
     if save:
-        df_svm_feature_importance.to_excel('feature_select/'+'svm_feature_importance'+str(X_train.shape[1])+'.xlsx',
+        df_svm_feature_importance.to_excel('feature_select/method2/'+'svm_feature_importance_'+str(X_train.shape[1])+'.xlsx',
                                            index=False)
 
     print("svm get score:", svm.svm_score())
