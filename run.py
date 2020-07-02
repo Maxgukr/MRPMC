@@ -4,7 +4,7 @@ from Model import RF, GBDT, LRl2, LRl1, KNN, SVM, MLP, StackModel, VotingModel
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import accuracy_score, precision_recall_curve, f1_score, roc_curve, average_precision_score, \
-    auc, confusion_matrix, precision_score, recall_score
+    auc, confusion_matrix, precision_score, recall_score, cohen_kappa_score
 import datetime as dt
 import os
 from sklearn.preprocessing import StandardScaler
@@ -250,7 +250,7 @@ def voting(rf, lr, svm, weights, mode='soft'):  #svm,
     return [rf, voting_label, voting_proba]
 
 
-summary1 = pd.DataFrame(data=np.zeros((19, 18)),
+summary1 = pd.DataFrame(data=np.zeros((20, 18)),
                         columns=pd.MultiIndex.from_product([['gg', 'zf', 'xy'],
                                                             ['MRPMC', 'MRPMC-1', 'RF', 'LR', 'SVM', 'MLP']]),
                        index=['AUC',
@@ -268,6 +268,7 @@ summary1 = pd.DataFrame(data=np.zeros((19, 18)),
                               'PPV',
                               'NPV',
                               'f1 score',
+                              'kappa score',
                               'TP',
                               'FN',
                               'FP',
@@ -275,7 +276,7 @@ summary1 = pd.DataFrame(data=np.zeros((19, 18)),
                        )
 
 
-summary2 = pd.DataFrame(data=np.zeros((19, 6)),
+summary2 = pd.DataFrame(data=np.zeros((20, 6)),
                         columns=pd.MultiIndex.from_product([['gg', 'zf', 'xy'],
                                                            ['GBDT', 'KNN']]),
                         index=['AUC',
@@ -293,6 +294,7 @@ summary2 = pd.DataFrame(data=np.zeros((19, 6)),
                                'PPV',
                                'NPV',
                                'f1 score',
+                               'kappa score'
                                'TP',
                                'FN',
                                'FP',
@@ -323,6 +325,7 @@ def analysis_results(results, y_test, hp):
         summary.loc['Accuracy-95%-CI-up'][hp, key] = upper
         # print("f1 score:", f1_score(y_test-1, results[key][1]-1))
         summary.loc['f1 score'][hp, key] = f1_score(y_test-1, results[key][1]-1)
+        summary.loc['kappa score'][hp, key] = cohen_kappa_score(y_test, results[key][1])
         # print("PPV:", precision_score(y_test-1, results[key][1]-1))
         summary.loc['PPV'][hp, key] = precision_score(y_test-1, results[key][1]-1)
         # print("NPV:", float(m[1][1]/(m[1][1]+m[0][1])))
