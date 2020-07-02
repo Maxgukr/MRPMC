@@ -102,7 +102,7 @@ def feature_select_by_delete_common_features():
 
 def feature_select_by_delete_combine_features():
     # method 2
-    n_last_features = [i for i in range(0, 10, step=2)]
+    n_last_features = [i for i in range(1, 20, 2)]
     combine_features_rank('./feature_select/')
     res_auc = pd.DataFrame(data=np.zeros((len(n_last_features), 4)),
                            columns=['feature_num', 'gg', 'zf', 'xy'],
@@ -121,4 +121,5 @@ def feature_select_by_delete_combine_features():
 
 
 if __name__ == "__main__":
-    feature_select_by_delete_common_features()
+    # feature_select_by_delete_common_features()
+    feature_select_by_delete_combine_features()
