@@ -4,6 +4,7 @@ import pandas as pd
 from data_preprocess import generate_data, generate_train_data
 from run import rf, lrl2, svm, voting
 from sklearn.metrics import roc_curve, auc
+import datetime as dt
 
 
 def combine_features_rank(feature_path):
@@ -114,7 +115,8 @@ def feature_select_by_delete_combine_features():
             True,
             i)
     res_auc.set_index('feature_num', drop=True, inplace=True)
-    res_auc.to_excel('./feature_select/VoteModel-AUC-Vary-with-Feature-Num-2.xlsx')
+    res_auc.to_excel('./feature_select/VoteModel-AUC-Vary-with-Feature-Num-2'
+                     + dt.datetime.now().strftime('%Y%m%d-%H-%M')+'.xlsx')
     ax = res_auc.plot(kind='bar')
     fig = ax.get_figure()
     fig.savefig('./feature_select/method2.pdf', dpi=400)

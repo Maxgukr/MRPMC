@@ -294,7 +294,7 @@ summary2 = pd.DataFrame(data=np.zeros((20, 6)),
                                'PPV',
                                'NPV',
                                'f1 score',
-                               'kappa score'
+                               'kappa score',
                                'TP',
                                'FN',
                                'FP',
