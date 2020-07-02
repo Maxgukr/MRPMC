@@ -3,35 +3,40 @@ import pandas as pd
 from Model import RF, GBDT, LRl2, LRl1, KNN, SVM, MLP, StackModel, VotingModel
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import classification_report, accuracy_score, precision_recall_curve, \
-    f1_score, roc_curve, average_precision_score, auc, confusion_matrix, precision_score, recall_score
+from sklearn.metrics import accuracy_score, precision_recall_curve, f1_score, roc_curve, average_precision_score, \
+    auc, confusion_matrix, precision_score, recall_score
 import datetime as dt
 import os
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.proportion import proportion_confint
 from sklearn.calibration import calibration_curve
-from sklearn.externals import joblib
+import joblib
 import shap_interpretation
+from numpy.random import seed
+
+
+# fixed random seed
+seed(2020)
+
 
 X_train, y_train, X_test_zf, y_test_zf, id_zf = generate_train_data('./data_filter30_svdimpute/SF.xlsx',
-                                                                    delete_n_last_features=False,
-                                                                    over_sample=False)
+                                                                    delete_n_last_features=False)
 test_data_gg, test_label_gg, columns, id_gg = generate_data('./data_filter30_svdimpute/OV.xlsx',
-                                                            delete_n_last_features=False)
+                                                            delete_n_last_features=False
+                                                            )
 test_data_xy, test_label_xy, _, id_xy = generate_data('./data_filter30_svdimpute/CHWH.xlsx',
-                                                      delete_n_last_features=False)
+                                                      delete_n_last_features=False
+                                                      )
 
 # 结果路径
 path = './results/'+dt.datetime.now().strftime('%Y%m%d-%H-%M')
 os.makedirs(path, exist_ok=True)
 # 保存模型路径
-save_models = './save_models/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
+save_models = './save_models'
 os.makedirs(save_models, exist_ok=True)
 
 
-
-
-def gbdt(X_train, y_train, X_test, y_test):
+def gbdt(X_train, y_train, X_test, y_test, save=True):
     # GBDT
     gbdt = GBDT(X_train, y_train, X_test, y_test)
     # train
@@ -51,14 +56,16 @@ def gbdt(X_train, y_train, X_test, y_test):
     df_gbdt_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     # df_rf_feature_importance.loc[0, df_rf_feature_importance.columns.values[:30]].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
-    df_gbdt_feature_importance.to_excel(path+'/'+'gbdt_feature_importance.xlsx', index=False)
+    if save:
+        df_gbdt_feature_importance.to_excel('feature_select/'+'gbdt_feature_importance'+str(X_train.shape[1])+'.xlsx',
+                                            index=False)
 
     print("gradient boost get score:", gbdt_score)
 
     return [gbdt, gbdt_predict_result, gbdt_predict_result_prob]
 
 
-def rf(X_train, y_train, X_test, y_test):
+def rf(X_train, y_train, X_test, y_test, save=True):
     # RF
     rf = RF(X_train, y_train, X_test, y_test)
     # train
@@ -74,17 +81,19 @@ def rf(X_train, y_train, X_test, y_test):
 
     # save rf feature importance
     df_rf_feature_importance = pd.DataFrame(data=rf_feature_importance.reshape(1, len(rf_feature_importance)),
-                                            columns=list(columns))
+                                            columns=list(X_train.columns.values))
     df_rf_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     # df_rf_feature_importance.loc[0, df_rf_feature_importance.columns.values[:30]].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
-    df_rf_feature_importance.to_excel(path+'/'+'rf_feature_importance.xlsx', index=False)
+    if save:
+        df_rf_feature_importance.to_excel('feature_select/method2/'+'rf_feature_importance_'+str(X_train.shape[1])+'.xlsx',
+                                          index=False)
     print("random forest get score:", rf_score)
 
     return [rf, rf_predict_result, rf_predict_result_prob]
 
 
-def lrl2(X_train, y_train, X_test, y_test):
+def lrl2(X_train, y_train, X_test, y_test, save=True):
     # lr
     lr = LRl2(X_train, y_train, X_test, y_test)
     # train
@@ -98,16 +107,18 @@ def lrl2(X_train, y_train, X_test, y_test):
 
     # save rf feature importance
     df_lr_feature_importance = pd.DataFrame(data=np.abs(lr_coef_),
-                                            columns=list(columns))
+                                            columns=list(X_train.columns.values))
     df_lr_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     # df_lr_feature_importance.loc[0, df_lr_feature_importance.columns.values].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
-    df_lr_feature_importance.to_excel(path+'/'+'lrl2_feature_importance.xlsx', index=False)
+    if save:
+        df_lr_feature_importance.to_excel('feature_select/method2/'+'lrl2_feature_importance_'+str(X_train.shape[1])+'.xlsx',
+                                          index=False)
     print("lr L2 get score:", lr.lr_score())
     return [lr, lr_predict, lr_predict_proba]
 
 
-def lrl1(X_train, y_train, X_test, y_test):
+def lrl1(X_train, y_train, X_test, y_test, save=True):
     # lr
     lr = LRl1(X_train, y_train, X_test, y_test)
     # train
@@ -121,11 +132,13 @@ def lrl1(X_train, y_train, X_test, y_test):
 
     # save rf feature importance
     df_lr_feature_importance = pd.DataFrame(data=np.abs(lr_coef_),
-                                            columns=list(columns))
+                                            columns=list(X_train.columns.values))
     df_lr_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     # df_lr_feature_importance.loc[0, df_lr_feature_importance.columns.values].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
-    df_lr_feature_importance.to_excel(path+'/'+'lrl1_feature_importance.xlsx', index=False)
+    if save:
+        df_lr_feature_importance.to_excel('feature_select/'+'lrl1_feature_importance'+str(X_train.shape[1])+'.xlsx',
+                                          index=False)
     print("lr L1 get score:", lr.lr_score())
     return [lr, lr_predict, lr_predict_proba]
 
@@ -145,7 +158,7 @@ def knn(X_train, y_train, X_test, y_test):
     return [knn, knn_predict, knn_predict_proba]
 
 
-def svm(X_train, y_train, X_test, y_test):
+def svm(X_train, y_train, X_test, y_test, save=True):
     # svc
     svm = SVM(X_train, y_train, X_test, y_test)
     # train
@@ -157,11 +170,13 @@ def svm(X_train, y_train, X_test, y_test):
     # predict confidence
     svm_confidence = svm.svm_predict_confidence()
     df_svm_feature_importance = pd.DataFrame(data=np.abs(svm_coef_),
-                                             columns=list(columns))
+                                             columns=list(X_train.columns.values))
     df_svm_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     # df_svm_feature_importance.loc[0, df_svm_feature_importance.columns.values].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
-    df_svm_feature_importance.to_excel(path+'/'+'svm_feature_importance.xlsx', index=False)
+    if save:
+        df_svm_feature_importance.to_excel('feature_select/method2/'+'svm_feature_importance_'+str(X_train.shape[1])+'.xlsx',
+                                           index=False)
 
     print("svm get score:", svm.svm_score())
     return [svm, svm_predict, svm_confidence]
@@ -173,15 +188,14 @@ def mlp(X_train, y_train, X_test, y_test):
     # mlp train
     mlp.mlp_train()
     # save model
-    joblib.dump(mlp.model, save_models + '/mlp.pkl')
+    # joblib.dump(mlp.model, save_models + '/mlp.pkl')
+    # mlp.model.save(save_models+'/mlp.pkl')
     # predict
-    mlp_predict = mlp.mlp_predict()
+    mlp_predict = mlp.mlp_predict_classes().reshape(len(X_test),)
     # predict probability
     mlp_predict_prob = mlp.mlp_predict_prob()
-
-    print("MLP get score:", mlp.mlp_score())
-
-    return [mlp, mlp_predict, mlp_predict_prob]
+    mlp_predict_prob = np.hstack((1-mlp_predict_prob, mlp_predict_prob))
+    return [mlp, mlp_predict+1, mlp_predict_prob]
 
 
 def stack_models(X_train, y_train, X_test, y_test):
@@ -195,37 +209,50 @@ def stack_models(X_train, y_train, X_test, y_test):
     return [stack_model, stack_model_predict, stack_model_predict_proba]
 
 
-def vote_models(X_train, y_train, X_test, y_test):
-    vote_model = VotingModel()
-    vote_model.train(X_train, y_train)
-    vote_model_predict = vote_model.predict(X_test)
-    vote_model_predict_proba = vote_model.predict_proba(X_test)
+def vote_models(X_train, y_train, X_test, model_lists):
+    vote_model = VotingModel(X_train, y_train, X_test, model_lists)
+    vote_model.train()
+    # save model
+    joblib.dump(vote_model.model, save_models + '/vote_model.pkl')
+    vote_model_predict = vote_model.predict()
+    vote_model_predict_proba = vote_model.predict_proba()
     return [vote_model, vote_model_predict, vote_model_predict_proba]
 
 
-def voting(rf, gbdt, lr, svm, weights):  #svm,
+def voting(rf, lr, svm, weights, mode='soft'):  #svm,
     voting_proba = np.zeros((len(rf), 2))
     voting_label = np.zeros((len(rf), ))
     all_proba = np.hstack((rf[:, 1].reshape(len(rf), 1),
                            # gbdt[:, 1].reshape(len(rf), 1),
                            lr[:, 1].reshape(len(rf), 1),
                            svm[:, 1].reshape(len(svm), 1)))
-
-    for i in range(len(all_proba)):
-        voting_proba[i][1] = (all_proba[i][0]*weights[0] + all_proba[i][1]*weights[1] +
-                              all_proba[i][2]*weights[2])/np.sum(weights)  #
-        voting_proba[i][0] = 1 - voting_proba[i][1]
-        if voting_proba[i][1] >= 0.5:
-            voting_label[i] = 2
-        else:
-            voting_label[i] = 1
-
+    if mode == 'soft':
+        for i in range(len(all_proba)):
+            voting_proba[i][1] = (all_proba[i][0]*weights[0] + all_proba[i][1]*weights[1] +
+                                  all_proba[i][2]*weights[2])/np.sum(weights)  #
+            voting_proba[i][0] = 1 - voting_proba[i][1]
+            if voting_proba[i][1] >= 0.5:
+                voting_label[i] = 2
+            else:
+                voting_label[i] = 1
+    elif mode == 'hard':
+        for i in range(len(all_proba)):
+            val2 = [n for n in all_proba[i] if n >= 0.5]
+            val1 = [n for n in all_proba[i] if n < 0.5]
+            if len(val2) >= 2:
+                voting_proba[i][1] = np.array(val2).sum()/len(val2)
+                voting_proba[i][0] = 1 - voting_proba[i][1]
+                voting_label[i] = 2
+            if len(val1) >= 2:
+                voting_proba[i][1] = np.array(val1).sum() / len(val1)
+                voting_proba[i][0] = 1 - voting_proba[i][1]
+                voting_label[i] = 1
     return [rf, voting_label, voting_proba]
 
 
-summary1 = pd.DataFrame(data=np.zeros((19, 27)),
+summary1 = pd.DataFrame(data=np.zeros((19, 18)),
                         columns=pd.MultiIndex.from_product([['gg', 'zf', 'xy'],
-                                                            ['EmsembleModel', 'Voting', 'RF', 'GBDT', 'LRl2', 'LRL1', 'SVM', 'MLP', 'KNN']]),
+                                                            ['MRPMC', 'MRPMC-1', 'RF', 'LR', 'SVM', 'MLP']]),
                        index=['AUC',
                               'AUC-95%-CI-low',
                               'AUC-95%-CI-up',
@@ -248,9 +275,9 @@ summary1 = pd.DataFrame(data=np.zeros((19, 27)),
                        )
 
 
-summary2 = pd.DataFrame(data=np.zeros((19, 9)),
+summary2 = pd.DataFrame(data=np.zeros((19, 6)),
                         columns=pd.MultiIndex.from_product([['gg', 'zf', 'xy'],
-                                                           ['MLP', 'SVM', 'KNN']]),
+                                                           ['GBDT', 'KNN']]),
                         index=['AUC',
                                'AUC-95%-CI-low',
                                'AUC-95%-CI-up',
@@ -274,24 +301,16 @@ summary2 = pd.DataFrame(data=np.zeros((19, 9)),
 
 
 def analysis_results(results, y_test, hp):
-    # file = open(path+'/'+hp+'-summary.txt', 'w')
-    # old = sys.stdout
-    # sys.stdout = file
     file = str(len(results))
     new_path = path+'/'+file+'/'
     os.makedirs(new_path, exist_ok=True)
-    if len(results) == 9:
+    if len(results) == 6:
         summary = summary1
     else:
         summary = summary2
-    shap_interpretation.run_shap(results, X_test, new_path, hp)
 
     for key, item in results.items():
-        print("####################################################")
-        print("/*results of ", key, "*/")
-        print("confusion_matrix:")
         m = confusion_matrix(y_test - 1, results[key][1] - 1, labels=[1, 0])
-        print(m)
         summary.loc['TP'][hp, key] = m[0][0]
         summary.loc['FN'][hp, key] = m[0][1]
         summary.loc['FP'][hp, key] = m[1][0]
@@ -330,18 +349,14 @@ def analysis_results(results, y_test, hp):
             q2 = 2 * area ** 2 / (1 + area)
             return np.sqrt((area * (1 - area) + (n1 - 1) * (q1 - area ** 2) + (n2 - 1) * (q2 - area ** 2)) / (n1 * n2))
         se = se_auc(area, m[0][0]+m[0][1], m[1][0]+m[1][1])
-        # print("AUC 95% confidence interval:", area-1.96*se, min(area+1.96*se, 1.0))
         summary.loc['AUC-95%-CI-low'][hp, key] = area-1.96*se
         summary.loc['AUC-95%-CI-up'][hp, key] = min(area+1.96*se, 1.0)
-        print("####################################################")
-    # sys.stdout = old  # 还原系统输出
-    # file.close()
     summary.to_excel(new_path+'/'+'-'+str(len(results))+'-summary.xlsx')
 
     # 绘制ROC、PRC、混淆矩阵
     labels_roc = []
     labels_prc = []
-    colors = ['navy', 'turquoise', 'darkorange', 'cornflowerblue', 'seagreen', 'pink', 'red', 'green', 'orange']
+    colors = ['navy', 'turquoise', 'darkorange', 'cornflowerblue', 'seagreen', 'pink', 'red', 'blue']
     plt.style.use("ggplot")
     fig1, ax1 = plt.subplots(1, 1, figsize=(10, 10), dpi=400)
     fig2, ax2 = plt.subplots(1, 1, figsize=(10, 10), dpi=400)
@@ -383,7 +398,6 @@ def analysis_results(results, y_test, hp):
     # save figures
     figs = [fig1, fig2, fig3, fig4]
     figs_name = ['-roc', '-prc', '-cal', '-hist']
-    # path = './results/' + dt.datetime.now().strftime('%Y%m%d-%H%M')+'-'+hp
     for i, fig in enumerate(figs):
         fig_name = figs_name[i]
         fig.tight_layout()
@@ -391,7 +405,6 @@ def analysis_results(results, y_test, hp):
 
 
 if __name__ == "__main__":
-
     y_train = y_train.reshape(len(y_train), )
     X_test = [test_data_gg, X_test_zf, test_data_xy]
     y_test = [test_label_gg.reshape(len(test_label_gg), ),
@@ -409,32 +422,33 @@ if __name__ == "__main__":
         # stack method
         stack_results = stack_models(X_train, y_train, X_test[i], y_test[i])
         # voting method
-        weights = {'gg': np.array([1, 0.7, 1]),
-                   'zf': np.array([2, 2, 0]),
-                   'xy': np.array([4, 4, 0])}
         vote_results = voting(rf_results[2],
                               lrl2_results[2],
                               svm_results[2],
-                              gbdt_results[2],
-                              np.array([1.3, 1.2, 0.8]))
-        predict = np.hstack((stack_results[1].reshape(len(stack_results[1]), 1), patient_id[i]))
+                              np.array([1.2, 1.2, 1.1]))
+        vote_with_mlp = voting(rf_results[2],
+                               lrl2_results[2],
+                               mlp_results[2],
+                               np.array([1, 1, 1]))
+        predict = np.hstack((vote_results[1].reshape(len(stack_results[1]), 1), patient_id[i]))
         predict_res = pd.DataFrame(predict, columns=['label', 'id'])
         predict_res.to_excel(path+'/'+hp+'-'+'-predict-results.xlsx', index=False)
-        results1 = {'EmsembleModel': stack_results,
-                    'Voting': vote_results,
+        results1 = {
+                    'MRPMC': vote_results,
+                    'MRPMC-1': vote_with_mlp,
                     'RF': rf_results,
-                    'GBDT': gbdt_results,
-                    'LRl2': lrl2_results,
-                    'LRL1': lrl1_results,
+                    'LR': lrl2_results,
                     'SVM': svm_results,
                     'MLP': mlp_results,
-                    'KNN': knn_results
                     }
         '''
         results2 = {
                    'MLP': mlp_results,
                    'SVM': svm_results,
                    'KNN': knn_results}
-                   '''
+        '''
+        # save shap results
+        os.makedirs(path+'/shape', exist_ok=True)
+        # shap_interpretation.run_shap(results1, X_test[i], path+'/shape', hp)
         analysis_results(results1, y_test[i], hp)
         # analysis_results(results2, y_test[i], hp)

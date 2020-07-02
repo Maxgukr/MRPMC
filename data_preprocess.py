@@ -2,16 +2,11 @@ import pandas as pd
 import json
 from numpy.random import uniform
 import numpy as np
-from matplotlib import pyplot as plt
 import math
 from sklearn.utils import shuffle
 from collections import Counter
-import datetime as dt
-# from imblearn.over_sampling import SMOTENC
-from numpy.random import seed
 
 
-# 这个文件不用管
 def load_data(file_name, feature_map):
     print("loading data...")
     fm = json.load(open(feature_map, 'r'))
@@ -27,10 +22,9 @@ def load_data(file_name, feature_map):
     return data, fm
 
 
-# 这个文件不用管
 def fill_nan(data, fm, filename):
     """
-    fill Nan value
+    fill Nan value by normal range
     :param data: input data
     :return: output data
     """
@@ -68,7 +62,7 @@ def fill_nan(data, fm, filename):
     return data
 
 
-def delete_last_features(rf, gbdt, lr, svm, n_last=20, thr=3):
+def delete_last_features(rf, gbdt, lr, svm, n_last=20, thr=2):
     '''
     :param rf: rf特征排序结果，以下含义类推
     :param gbdt:
@@ -79,10 +73,13 @@ def delete_last_features(rf, gbdt, lr, svm, n_last=20, thr=3):
     :return:
     '''
     rf = pd.read_excel(rf).columns.values.tolist()
-    gbdt = pd.read_excel(gbdt).columns.values.tolist()
     lr = pd.read_excel(lr).columns.values.tolist()
     svm = pd.read_excel(svm).columns.values.tolist()
-    n_last_list = rf[-n_last:] + gbdt[-n_last:] + lr[-n_last:] + svm[-n_last:]
+    if gbdt is None:
+        n_last_list = rf[-n_last:] + lr[-n_last:] + svm[-n_last:]
+    else:
+        gbdt = pd.read_excel(gbdt).columns.values.tolist()
+        n_last_list = rf[-n_last:] + lr[-n_last:] + svm[-n_last:] + gbdt[-n_last:]
     feature_count = dict(Counter(n_last_list))
     n_last_delete = []
     for key, value in feature_count.items():
@@ -92,29 +89,38 @@ def delete_last_features(rf, gbdt, lr, svm, n_last=20, thr=3):
     return n_last_delete
 
 
-def generate_train_data(filename, split_rate=0.8, delete_n_last_features=False, over_sample=False):
+def generate_train_data(filename,
+                        split_rate=0.8,
+                        delete_n_last_common_features=False,
+                        n_common_last=20,
+                        delete_n_last_features=False,
+                        n_last=0):
     '''
     专门处理中法医院的数据，中法医院一部分用作训练集，一部分用作内部测试集
     :param filename: 中法医院数据文件
     :param split_rate: 分割比例
-    :param delete_n_last_features: 是否删除Grade2特征
-    :param over_sample: 是否采用SMOTENC算法对死亡样本进行过采样
+    :param delete_n_last_common_features: 删除在rf, lr, svm中都出现的公共特征
+    :param n_common_last: 要选择的公共部分的数量
+    :param delete_n_last_features 删除加权平均后的倒数n个特征
+    :param n_last 删除加权平均后的特征数量
     :return: x_tarin, y_train, x_test, y_test
     '''
     data = pd.read_excel(filename)
+    # 删除组合之后的最后几个特征
+    if delete_n_last_features:
+        combine_feature_rank = pd.read_excel('./feature_select/combine_feature_rank.xlsx')
+        features = combine_feature_rank.columns.values[-n_last:]
+        data.drop(columns=features, inplace=True)
 
     # 删除特征排序中，在RF，GBDT，LR，SVM中排名最后20个中，出现三次以上的特征
     # delete last 20 features in features rank of rf,gbdt,ls, svm
-    if delete_n_last_features:
-        path = './feature_select/' + '20200509-15-58-'
-        n_last_delete = delete_last_features(path + 'rf_feature_importance.xlsx',
-                                             path + 'gbdt_feature_importance.xlsx',
-                                             path + 'lr_feature_importance.xlsx',
-                                             path + 'svm_feature_importance.xlsx',
-                                             20,
-                                             3)
+    if delete_n_last_common_features:
+        path = './feature_select/'
+        n_last_delete = delete_last_features(rf=path + 'rf_feature_importance.xlsx',
+                                             lr=path + 'lrl2_feature_importance.xlsx',
+                                             svm=path + 'svm_feature_importance.xlsx',
+                                             n_last=n_common_last)
         data.drop(columns=n_last_delete, inplace=True)
-        data.to_excel(filename.split('.')[0] + '-COVID_delete_n_last_features.xlsx', index=False)
 
     df_death = data.loc[data.Death == 2]
     df_live = data.loc[data.Death == 1]
@@ -131,12 +137,11 @@ def generate_train_data(filename, split_rate=0.8, delete_n_last_features=False, 
     df_live_test = df_live[live_split_index:]
 
     # 将train需要的死亡数据与训练用的出院数据合并再打散顺序
-    seed(2020)
     df_train = pd.concat([df_death_train, df_live_train], axis=0)
-    df_train = shuffle(df_train, random_state=13)
+    df_train = shuffle(df_train)
     # 将test需要的死亡数据与训练用的出院数据合并再打散顺序
     df_test = pd.concat([df_death_test, df_live_test], axis=0)
-    df_test = shuffle(df_test, random_state=13)
+    df_test = shuffle(df_test)
 
     # 获得train数据和test数据的label y_train, y_test
     y_train = df_train.get(['Death']).values.reshape(len(df_train), 1)
@@ -145,7 +150,6 @@ def generate_train_data(filename, split_rate=0.8, delete_n_last_features=False, 
     id1 = df_test.get(['ID']).values.reshape(len(df_test), 1)
 
     # 获得train数据和test数据的输入，x_train，x_test
-    # df_test.to_excel('./data_description/'+dt.datetime.now().strftime('%Y%m%d-%H-%M')+'-zf_test.xlsx', index=False)
     df_test.drop(columns=['Death', 'ID'], inplace=True)
     # x_train = df_train.values
     # x_test = df_test.values
@@ -159,7 +163,7 @@ def generate_train_data(filename, split_rate=0.8, delete_n_last_features=False, 
         smo = SMOTENC(categorical_features=[1, 2, 3, 7, 8, 9, 10, 38, 39],
                       sampling_strategy=0.5,
                       random_state=42)
-        X_train, y_train = smo.fit_sample(df_train, y_train)
+        X_train, y_train = smo.fit_sample(x_train, y_train)
         # print(Counter(y_smo.reshape(len(y_smo, )).tolist()))
         df_train_smo = pd.DataFrame(data=np.hstack((X_train, y_train.reshape(len(y_train), 1))),
                                     columns=data.drop(columns=['ID']).columns.values.tolist())
@@ -168,30 +172,37 @@ def generate_train_data(filename, split_rate=0.8, delete_n_last_features=False, 
         df_train_smo.drop(columns=['Death'], inplace=True)
         x_train = df_train_smo.values
     '''
-
     return df_train, y_train, df_test, y_test, id1
 
 
-def generate_data(filename, delete_n_last_features=False):
+def generate_data(filename,
+                  delete_n_last_common_features=False,
+                  n_common_last=20,
+                  delete_n_last_features=False,
+                  n_last=0):
     '''
     用来处理光谷院区，襄阳院区的数据
     :param filename: 医院数据文件
-    :param delete_n_last_features: 是否删除Grade2特征
+    :param delete_n_last_common_features: 删除在rf, lr, svm中都出现的公共特征
+    :param n_common_last: 要选择的公共部分的数量
+    :param delete_n_last_features 删除加权平均后的倒数n个特征
+    :param n_last 删除加权平均后的特征数量
     :return: x_tarin, y_train, x_test, y_test
     '''
     data = pd.read_excel(filename)
-
-    # delete last 20 features in features rank of rf,gbdt,ls, svm
+    # 删除组合之后的最后几个特征
     if delete_n_last_features:
-        path = './feature_select/'+'20200509-15-58-'
-        n_last_delete = delete_last_features(path+'rf_feature_importance.xlsx',
-                                             path+'gbdt_feature_importance.xlsx',
-                                             path+'lr_feature_importance.xlsx',
-                                             path+'svm_feature_importance.xlsx',
-                                             20,
-                                             3)
+        combine_feature_rank = pd.read_excel('./feature_select/combine_feature_rank.xlsx')
+        features = combine_feature_rank.columns.values[-n_last:]
+        data.drop(columns=features, inplace=True)
+    # delete last n features in features rank of rf, gbdt, ls, svm
+    if delete_n_last_common_features:
+        path = './feature_select/'
+        n_last_delete = delete_last_features(rf=path+'rf_feature_importance.xlsx',
+                                             lr=path+'lrl2_feature_importance.xlsx',
+                                             svm=path+'svm_feature_importance.xlsx',
+                                             n_last=n_common_last)
         data.drop(columns=n_last_delete, inplace=True)
-        # data.to_excel(filename+'-COVID_after_delete_n_last_features.xlsx', index=False)
 
     index = data.index[np.where(np.isnan(data))[0]].values
     assert len(index) == 0
@@ -206,61 +217,13 @@ def generate_data(filename, delete_n_last_features=False):
     return data, label, columns, ID
 
 
-def combine_features_rank(delete_grade=False):
-    '''
-    对 rf,gbdt, lr, svm的排序结果进行加权平均，
-    :param delete_grade:
-    :return:
-    '''
-    model_feature = {}
-    model_list = ['rf', 'gbdt', 'lr', 'svm']
-    for model in model_list:
-        path = './results/'+'20200512-13-00-40-stack-yes/'+model+'_feature_importance.xlsx'
-        columns = pd.read_excel(path).columns.values.tolist()
-        index = [i+1 for i in range(len(columns))]
-        model_feature[model] = dict(zip(columns, index))
-    # 每种模型排名对应的权重，用对应的F1值表示
-    weights = {'rf': 0.77, 'gbdt': 0.7, 'lr': 0.75, 'svm': 0.75}  # , 'LR': 0.81, 'SVM': 0.74}
-    columns = list(model_feature['rf'].keys())
-    new_rank = {}
-    for col in columns:
-        s = 0
-        for key in model_list:
-            s = s + model_feature[key][col] * weights[key]
-        new_rank[col] = float(1.0/float(s/4.0))
-    new_rank_df = pd.DataFrame(new_rank, index=[0])
-
-    if delete_grade:
-        grade = []
-        original = []
-        for col in columns:
-            if 'Grade2' in col:
-                grade.append(col)
-            else:
-                original.append(col)
-        grade_df = new_rank_df.get(grade)
-        original_df = new_rank_df.get(original)
-        grade_df.sort_values(by=0, axis=1, ascending=False, inplace=True)
-        original_df.sort_values(by=0, axis=1, ascending=False, inplace=True)
-        grade_df.to_excel('./data/combine_feature_rank_grade_4.xlsx', index=False)
-        original_df.to_excel('./data/combine_feature_rank_original_4.xlsx', index=False)
-
-    new_rank_df.sort_values(by=0, axis=1, ascending=False, inplace=True)
-    # new_rank_df.drop(columns=['RRGrade2'], inplace=True)
-    new_rank_df.to_excel('./results/20200512-13-00-40-stack-yes/13-00-combine_feature_rank.xlsx', index=False)
-    new_rank_df.loc[0, new_rank_df.columns.values[:30]].plot(kind='bar')
-    plt.show()
-
-    return new_rank
-
-
 def data_description(filename):
     '''
     分成死亡和出院两种，统计每个特征的缺失情况
     :param filename:
     :return:
     '''
-    data = pd.read_excel(filename, dtype={'Name': str, 'Value': float})
+    data = pd.read_csv(filename, dtype={'Name': str, 'Value': float})
     delete_features = ['SOFA score', 'Corticosteroids', 'DurationCorticosteroids',
                        'Intravenous immunoglobin', 'Antibiotics',
                        'carbostyril', 'cephalosporin', 'broad_spectrum',
@@ -269,19 +232,23 @@ def data_description(filename):
                        'Oseltamivir', 'Arbidol', 'Lopinavir',
                        'Detection approach', 'DurationRibavirin', 'DurationLopinavir',
                        'DurationOseltamivir', 'DurationArbidol', 'IgM', 'IgG', 'IgGGrade2',
-                       'Oxygen therapy approach', 'IgMGrade2', 'Interferon', 'ID', 'Nucleic1']
+                       'Oxygen therapy approach', 'IgMGrade2', 'Interferon', 'ID']
     data.drop(columns=delete_features, inplace=True)
     columns = data.columns.values
     for col in columns:
         if 'Grade' in col:
             data.drop(columns=[col], inplace=True)
-    n_last_delete = delete_last_features('./data/rf_feature_importance.xlsx',
-                                         './data/gbdt_feature_importance.xlsx',
-                                         './data/lr_feature_importance.xlsx',
-                                         './data/svm_feature_importance.xlsx',
-                                         20,
-                                         3)
+    path = './feature_select/20200509-15-58-'
+    n_last_delete = delete_last_features(rf=path+'rf_feature_importance.xlsx',
+                                         gbdt=path+'gbdt_feature_importance.xlsx',
+                                         lr=path+'lr_feature_importance.xlsx',
+                                         svm=path+'svm_feature_importance.xlsx',
+                                         n_last=20,
+                                         thr=3)
     data.drop(columns=n_last_delete, inplace=True)
+    data.drop(columns=['Death'], inplace=True)
+    data.to_excel('./feature_select/impute_with_normal_range_'+filename.split('/')[-1][:2]+'.xlsx', index=False)
+    '''
     data_death = data.loc[data.Death == 2]
     data_live = data.loc[data.Death == 1]
     res_death = len(data_death) - data_death.count().values
@@ -292,14 +259,14 @@ def data_description(filename):
                           index=['death'+str(len(data_death)), 'live'+str(len(data_live))])
     pd_res.to_excel('./data_description/'+'Nan-statistic-'+filename[7:], index=True)
     print("")
-
+    '''
 
 if __name__ == "__main__":
     # combine_features_rank()
     # data, fm = load_data('./data/COVID-19-xy.xlsx', './data/feature-map.json')
     # test_data_xy, test_label_xy, _, id_xy = generate_data('./data/COVID-19-xy.xlsx')
     # data = fill_nan(data, fm, 'xy')
-    # data_description('./data/COVID-19-xy.xlsx')
-    # data_description('./data/COVID-19-zf.xlsx')
-    # data_description('./data/COVID-19-gg.xlsx')
+    data_description('./data_impute_with_normal_range/xyprocessed_data.csv')
+    data_description('./data_impute_with_normal_range/zfprocessed_data.csv')
+    data_description('./data_impute_with_normal_range/ggprocessed_data.csv')
     print("processed finished!")
