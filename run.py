@@ -41,12 +41,15 @@ test_data_xy, test_label_xy, _, id_xy = generate_data(CHWH_impute_svd,
                                                       n_last=17
                                                       )
 
-# 结果路径
+# results path
 path = './results/'+dt.datetime.now().strftime('%Y%m%d-%H-%M') + '-impute-svd'
 os.makedirs(path, exist_ok=True)
-# 保存模型路径
+# save models path
 save_models = './save_models'
 os.makedirs(save_models, exist_ok=True)
+# feature rank path
+rank_path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M') + '-feature_rank/'
+os.makedirs(rank_path, exist_ok=True)
 
 
 def sigmoid(a):
@@ -66,21 +69,14 @@ def gbdt(X_train, y_train, X_test, y_test, save=True):
     gbdt_predict_result_prob = gbdt.gbdt_predict_prob()
     # get score
     gbdt_score = gbdt.gbdt_score()
-
     # save rf feature importance
     df_gbdt_feature_importance = pd.DataFrame(data=gbdt_feature_importance.reshape(1, len(gbdt_feature_importance)),
                                             columns=list(columns))
     df_gbdt_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
-    # df_rf_feature_importance.loc[0, df_rf_feature_importance.columns.values[:30]].plot(kind='bar')
-    # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
     if save:
-        df_gbdt_feature_importance.to_excel('feature_select/feature_rank/'+'gbdt_feature_importance'+str(X_train.shape[1])+'.xlsx',
+        df_gbdt_feature_importance.to_excel(rank_path+'gbdt_feature_importance'+str(X_train.shape[1])+'.xlsx',
                                             index=False)
-
     print("gradient boost get score:", gbdt_score)
-
-    # gbdt_predict_result_prob = sigmoid(gbdt_predict_result_prob*10 - 0.5*10)
-
     return [gbdt, gbdt_predict_result, gbdt_predict_result_prob]
 
 
@@ -97,18 +93,14 @@ def rf(X_train, y_train, X_test, y_test, save=True):
     rf_predict_result_prob = rf.rf_predict_prob()
     # get score
     rf_score = rf.rf_score()
-
     # save rf feature importance
     df_rf_feature_importance = pd.DataFrame(data=rf_feature_importance.reshape(1, len(rf_feature_importance)),
                                             columns=list(X_train.columns.values))
     df_rf_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
-    # df_rf_feature_importance.loc[0, df_rf_feature_importance.columns.values[:30]].plot(kind='bar')
-    # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
     if save:
-        df_rf_feature_importance.to_excel('feature_select/feature_rank/'+'rf_feature_importance_'+str(X_train.shape[1])+'.xlsx',
+        df_rf_feature_importance.to_excel(rank_path+'rf_feature_importance_'+str(X_train.shape[1])+'.xlsx',
                                           index=False)
     print("random forest get score:", rf_score)
-    # rf_predict_result_prob = sigmoid(rf_predict_result_prob * 10 - 0.5 * 10)
     return [rf, rf_predict_result, rf_predict_result_prob]
 
 
@@ -123,18 +115,14 @@ def lrl2(X_train, y_train, X_test, y_test, save=True):
     lr_predict = lr.lr_predict()
     # predict probability
     lr_predict_prob = lr.lr_predict_proba()
-
     # save rf feature importance
     df_lr_feature_importance = pd.DataFrame(data=np.abs(lr_coef_),
                                             columns=list(X_train.columns.values))
     df_lr_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
-    # df_lr_feature_importance.loc[0, df_lr_feature_importance.columns.values].plot(kind='bar')
-    # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
     if save:
-        df_lr_feature_importance.to_excel('feature_select/feature_rank/'+'lrl2_feature_importance_'+str(X_train.shape[1])+'.xlsx',
+        df_lr_feature_importance.to_excel(rank_path+'lrl2_feature_importance_'+str(X_train.shape[1])+'.xlsx',
                                           index=False)
     print("lr L2 get score:", lr.lr_score())
-    # lr_predict_prob = sigmoid(lr_predict_prob * 10 - 0.5 * 10)
     return [lr, lr_predict, lr_predict_prob]
 
 
@@ -149,15 +137,12 @@ def lrl1(X_train, y_train, X_test, y_test, save=True):
     lr_predict = lr.lr_predict()
     # predict probability
     lr_predict_proba = lr.lr_predict_proba()
-
     # save rf feature importance
     df_lr_feature_importance = pd.DataFrame(data=np.abs(lr_coef_),
                                             columns=list(X_train.columns.values))
     df_lr_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
-    # df_lr_feature_importance.loc[0, df_lr_feature_importance.columns.values].plot(kind='bar')
-    # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
     if save:
-        df_lr_feature_importance.to_excel('feature_select/'+'lrl1_feature_importance'+str(X_train.shape[1])+'.xlsx',
+        df_lr_feature_importance.to_excel(rank_path+'lrl1_feature_importance'+str(X_train.shape[1])+'.xlsx',
                                           index=False)
     print("lr L1 get score:", lr.lr_score())
     return [lr, lr_predict, lr_predict_proba]
@@ -175,7 +160,6 @@ def knn(X_train, y_train, X_test, y_test):
     # predict probability
     knn_predict_prob = knn.knn_predict_proba()
     print("knn get score:", knn.score())
-    # knn_predict_prob = sigmoid(knn_predict_prob * 10 - 0.5 * 10)
     return [knn, knn_predict, knn_predict_prob]
 
 
@@ -193,14 +177,10 @@ def svm(X_train, y_train, X_test, y_test, save=True):
     df_svm_feature_importance = pd.DataFrame(data=np.abs(svm_coef_),
                                              columns=list(X_train.columns.values))
     df_svm_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
-    # df_svm_feature_importance.loc[0, df_svm_feature_importance.columns.values].plot(kind='bar')
-    # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
     if save:
-        df_svm_feature_importance.to_excel('feature_select/feature_rank/'+'svm_feature_importance_'+str(X_train.shape[1])+'.xlsx',
+        df_svm_feature_importance.to_excel(rank_path+'svm_feature_importance_'+str(X_train.shape[1])+'.xlsx',
                                            index=False)
-
     print("svm get score:", svm.svm_score())
-    # svm_confidence = sigmoid(svm_confidence * 10 - 0.5 * 10)
     return [svm, svm_predict, svm_confidence]
 
 
@@ -210,8 +190,6 @@ def mlp(X_train, y_train, X_test, y_test):
     # mlp train
     mlp.mlp_train()
     # save model
-    # joblib.dump(mlp.model, save_models + '/mlp.pkl')
-    # mlp.model.save(save_models+'/mlp.pkl')
     # predict
     mlp_predict = mlp.mlp_predict_classes().reshape(len(X_test),)
     # predict probability
@@ -227,7 +205,6 @@ def stack_models(X_train, y_train, X_test, y_test):
     stack_model = StackModel()
     stack_model.train(X_train, y_train)
     stack_model_predict, stack_model_predict_proba = stack_model.predict_proba(X_test, y_test)
-    # print("stack get score:", stack_model.score(X_test, y_test))
     return [stack_model, stack_model_predict, stack_model_predict_proba]
 
 
@@ -238,15 +215,13 @@ def vote_models(X_train, y_train, X_test, model_lists):
     joblib.dump(vote_model.model, save_models + '/vote_model.pkl')
     vote_model_predict = vote_model.predict()
     vote_model_predict_prob = vote_model.predict_proba()
-    # vote_model_predict_prob = sigmoid(vote_model_predict_prob * 10 - 0.5 * 10)
     return [vote_model, vote_model_predict, vote_model_predict_prob]
 
 
-def voting(rf, lr, svm, weights, mode, hp):  #svm,
+def voting(rf, lr, svm, weights, mode, hp):
     voting_proba = np.zeros((len(rf), 2))
     voting_label = np.zeros((len(rf), ))
     all_proba = np.hstack((rf[:, 1].reshape(len(rf), 1),
-                           # gbdt[:, 1].reshape(len(rf), 1),
                            lr[:, 1].reshape(len(rf), 1),
                            svm[:, 1].reshape(len(svm), 1)))
     if mode == 'soft':
@@ -270,36 +245,37 @@ def voting(rf, lr, svm, weights, mode, hp):  #svm,
                 voting_proba[i][1] = np.array(val1).sum() / len(val1)
                 voting_proba[i][0] = 1 - voting_proba[i][1]
                 voting_label[i] = 1
-    # voting_prob = sigmoid(voting_proba * 10 - 0.5 * 10)
     return [rf, voting_label, voting_proba]
 
 
+# summary six models' results
 summary1 = pd.DataFrame(data=np.zeros((20, 18)),
                         columns=pd.MultiIndex.from_product([['gg', 'zf', 'xy'],
                                                             ['MRPMC', 'MRPMC-1', 'RF', 'LR', 'SVM', 'MLP']]),
-                       index=['AUC',
-                              'AUC-95%-CI-low',
-                              'AUC-95%-CI-up',
-                              'Accuracy',
-                              'Accuracy-95%-CI-low',
-                              'Accuracy-95%-CI-up',
-                              'Sensitivity',
-                              'Sensitivity-95%-CI-low',
-                              'Sensitivity-95%-CI-up',
-                              'Specificity',
-                              'Specificity-95%-CI-low',
-                              'Specificity-95%-CI-up',
-                              'PPV',
-                              'NPV',
-                              'f1 score',
-                              'kappa score',
-                              'TP',
-                              'FN',
-                              'FP',
-                              'TN']
-                       )
+                        index=['AUC',
+                               'AUC-95%-CI-low',
+                               'AUC-95%-CI-up',
+                               'Accuracy',
+                               'Accuracy-95%-CI-low',
+                               'Accuracy-95%-CI-up',
+                               'Sensitivity',
+                               'Sensitivity-95%-CI-low',
+                               'Sensitivity-95%-CI-up',
+                               'Specificity',
+                               'Specificity-95%-CI-low',
+                               'Specificity-95%-CI-up',
+                               'PPV',
+                               'NPV',
+                               'f1 score',
+                               'kappa score',
+                               'TP',
+                               'FN',
+                               'FP',
+                               'TN']
+                        )
 
 
+# summary two models' results
 summary2 = pd.DataFrame(data=np.zeros((20, 6)),
                         columns=pd.MultiIndex.from_product([['gg', 'zf', 'xy'],
                                                            ['GBDT', 'KNN']]),
@@ -334,7 +310,6 @@ def analysis_results(results, y_test, hp):
         summary = summary1
     else:
         summary = summary2
-
     for key, item in results.items():
         m = confusion_matrix(y_test - 1, results[key][1] - 1, labels=[1, 0])
         summary.loc['TP'][hp, key] = m[0][0]
@@ -380,7 +355,7 @@ def analysis_results(results, y_test, hp):
         summary.loc['AUC-95%-CI-up'][hp, key] = min(area+1.96*se, 1.0)
     summary.to_excel(new_path+'/'+'-'+str(len(results))+'-summary.xlsx')
 
-    # 绘制ROC、PRC、混淆矩阵
+    # plot ROC、PRC、confusion matrix
     labels_roc = []
     labels_prc = []
     colors = ['navy', 'turquoise', 'darkorange', 'cornflowerblue', 'seagreen', 'pink', 'red', 'blue']
@@ -403,6 +378,7 @@ def analysis_results(results, y_test, hp):
         prob_pos = item[2].T[1]
         fraction_of_positives, mean_predicted_value = calibration_curve(y_test, prob_pos, n_bins=5)
 
+        # calculate mse in calibration curve
         def getDis(pointX, pointY, lineX1, lineY1, lineX2, lineY2):
             a = lineY2 - lineY1
             b = lineX1 - lineX2
@@ -467,8 +443,6 @@ if __name__ == "__main__":
         knn_results = knn(X_train, y_train, X_test[i], y_test[i])
         svm_results = svm(X_train, y_train, X_test[i], y_test[i])
         mlp_results = mlp(X_train, y_train, X_test[i], y_test[i])
-        # stack method
-        # stack_results = stack_models(X_train, y_train, X_test[i], y_test[i])
         # voting method
         vote_results = voting(rf_results[2],
                               lrl2_results[2],
