@@ -13,27 +13,44 @@ from sklearn.calibration import calibration_curve
 import joblib
 import shap_interpretation
 from numpy.random import seed
+import math
 
 
 # fixed random seed
 seed(2020)
 
+SF_impute_median = './data_filter5_median_impute/SF_impute_with_median.xlsx'
+SF_impute_svd = './data_filter30_svdimpute/SF.xlsx'
 
-X_train, y_train, X_test_zf, y_test_zf, id_zf = generate_train_data('./data_filter30_svdimpute/SF.xlsx',
-                                                                    delete_n_last_features=False)
-test_data_gg, test_label_gg, columns, id_gg = generate_data('./data_filter30_svdimpute/OV.xlsx',
-                                                            delete_n_last_features=False
+OV_impute_median = './data_filter5_median_impute/OV_impute_with_median.xlsx'
+OV_impute_svd = './data_filter30_svdimpute/OV.xlsx'
+
+CHWH_impute_median = './data_filter5_median_impute/CHWH_impute_with_median.xlsx'
+CHWH_impute_svd = './data_filter30_svdimpute/CHWH_replace.xlsx'
+
+X_train, y_train, X_test_zf, y_test_zf, id_zf = generate_train_data(SF_impute_svd,
+                                                                    delete_n_last_features=True,
+                                                                    n_last=17
+                                                                    )
+test_data_gg, test_label_gg, columns, id_gg = generate_data(OV_impute_svd,
+                                                            delete_n_last_features=True,
+                                                            n_last=17
                                                             )
-test_data_xy, test_label_xy, _, id_xy = generate_data('./data_filter30_svdimpute/CHWH.xlsx',
-                                                      delete_n_last_features=False
+test_data_xy, test_label_xy, _, id_xy = generate_data(CHWH_impute_svd,
+                                                      delete_n_last_features=True,
+                                                      n_last=17
                                                       )
 
 # 结果路径
-path = './results/'+dt.datetime.now().strftime('%Y%m%d-%H-%M')
+path = './results/'+dt.datetime.now().strftime('%Y%m%d-%H-%M') + '-impute-svd'
 os.makedirs(path, exist_ok=True)
 # 保存模型路径
 save_models = './save_models'
 os.makedirs(save_models, exist_ok=True)
+
+
+def sigmoid(a):
+    return 1/(1+np.exp(-a))
 
 
 def gbdt(X_train, y_train, X_test, y_test, save=True):
@@ -57,10 +74,12 @@ def gbdt(X_train, y_train, X_test, y_test, save=True):
     # df_rf_feature_importance.loc[0, df_rf_feature_importance.columns.values[:30]].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
     if save:
-        df_gbdt_feature_importance.to_excel('feature_select/'+'gbdt_feature_importance'+str(X_train.shape[1])+'.xlsx',
+        df_gbdt_feature_importance.to_excel('feature_select/feature_rank/'+'gbdt_feature_importance'+str(X_train.shape[1])+'.xlsx',
                                             index=False)
 
     print("gradient boost get score:", gbdt_score)
+
+    # gbdt_predict_result_prob = sigmoid(gbdt_predict_result_prob*10 - 0.5*10)
 
     return [gbdt, gbdt_predict_result, gbdt_predict_result_prob]
 
@@ -86,10 +105,10 @@ def rf(X_train, y_train, X_test, y_test, save=True):
     # df_rf_feature_importance.loc[0, df_rf_feature_importance.columns.values[:30]].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
     if save:
-        df_rf_feature_importance.to_excel('feature_select/method2/'+'rf_feature_importance_'+str(X_train.shape[1])+'.xlsx',
+        df_rf_feature_importance.to_excel('feature_select/feature_rank/'+'rf_feature_importance_'+str(X_train.shape[1])+'.xlsx',
                                           index=False)
     print("random forest get score:", rf_score)
-
+    # rf_predict_result_prob = sigmoid(rf_predict_result_prob * 10 - 0.5 * 10)
     return [rf, rf_predict_result, rf_predict_result_prob]
 
 
@@ -103,7 +122,7 @@ def lrl2(X_train, y_train, X_test, y_test, save=True):
     # predict
     lr_predict = lr.lr_predict()
     # predict probability
-    lr_predict_proba = lr.lr_predict_proba()
+    lr_predict_prob = lr.lr_predict_proba()
 
     # save rf feature importance
     df_lr_feature_importance = pd.DataFrame(data=np.abs(lr_coef_),
@@ -112,10 +131,11 @@ def lrl2(X_train, y_train, X_test, y_test, save=True):
     # df_lr_feature_importance.loc[0, df_lr_feature_importance.columns.values].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
     if save:
-        df_lr_feature_importance.to_excel('feature_select/method2/'+'lrl2_feature_importance_'+str(X_train.shape[1])+'.xlsx',
+        df_lr_feature_importance.to_excel('feature_select/feature_rank/'+'lrl2_feature_importance_'+str(X_train.shape[1])+'.xlsx',
                                           index=False)
     print("lr L2 get score:", lr.lr_score())
-    return [lr, lr_predict, lr_predict_proba]
+    # lr_predict_prob = sigmoid(lr_predict_prob * 10 - 0.5 * 10)
+    return [lr, lr_predict, lr_predict_prob]
 
 
 def lrl1(X_train, y_train, X_test, y_test, save=True):
@@ -153,9 +173,10 @@ def knn(X_train, y_train, X_test, y_test):
     # predict
     knn_predict = knn.knn_predict()
     # predict probability
-    knn_predict_proba = knn.knn_predict_proba()
+    knn_predict_prob = knn.knn_predict_proba()
     print("knn get score:", knn.score())
-    return [knn, knn_predict, knn_predict_proba]
+    # knn_predict_prob = sigmoid(knn_predict_prob * 10 - 0.5 * 10)
+    return [knn, knn_predict, knn_predict_prob]
 
 
 def svm(X_train, y_train, X_test, y_test, save=True):
@@ -175,10 +196,11 @@ def svm(X_train, y_train, X_test, y_test, save=True):
     # df_svm_feature_importance.loc[0, df_svm_feature_importance.columns.values].plot(kind='bar')
     # path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M')
     if save:
-        df_svm_feature_importance.to_excel('feature_select/method2/'+'svm_feature_importance_'+str(X_train.shape[1])+'.xlsx',
+        df_svm_feature_importance.to_excel('feature_select/feature_rank/'+'svm_feature_importance_'+str(X_train.shape[1])+'.xlsx',
                                            index=False)
 
     print("svm get score:", svm.svm_score())
+    # svm_confidence = sigmoid(svm_confidence * 10 - 0.5 * 10)
     return [svm, svm_predict, svm_confidence]
 
 
@@ -215,11 +237,12 @@ def vote_models(X_train, y_train, X_test, model_lists):
     # save model
     joblib.dump(vote_model.model, save_models + '/vote_model.pkl')
     vote_model_predict = vote_model.predict()
-    vote_model_predict_proba = vote_model.predict_proba()
-    return [vote_model, vote_model_predict, vote_model_predict_proba]
+    vote_model_predict_prob = vote_model.predict_proba()
+    # vote_model_predict_prob = sigmoid(vote_model_predict_prob * 10 - 0.5 * 10)
+    return [vote_model, vote_model_predict, vote_model_predict_prob]
 
 
-def voting(rf, lr, svm, weights, mode='soft'):  #svm,
+def voting(rf, lr, svm, weights, mode, hp):  #svm,
     voting_proba = np.zeros((len(rf), 2))
     voting_label = np.zeros((len(rf), ))
     all_proba = np.hstack((rf[:, 1].reshape(len(rf), 1),
@@ -228,8 +251,8 @@ def voting(rf, lr, svm, weights, mode='soft'):  #svm,
                            svm[:, 1].reshape(len(svm), 1)))
     if mode == 'soft':
         for i in range(len(all_proba)):
-            voting_proba[i][1] = (all_proba[i][0]*weights[0] + all_proba[i][1]*weights[1] +
-                                  all_proba[i][2]*weights[2])/np.sum(weights)  #
+            voting_proba[i][1] = (all_proba[i][0]*weights[hp][0] + all_proba[i][1]*weights[hp][1] +
+                                  all_proba[i][2]*weights[hp][2])/np.sum(weights[hp])  #
             voting_proba[i][0] = 1 - voting_proba[i][1]
             if voting_proba[i][1] >= 0.5:
                 voting_label[i] = 2
@@ -247,6 +270,7 @@ def voting(rf, lr, svm, weights, mode='soft'):  #svm,
                 voting_proba[i][1] = np.array(val1).sum() / len(val1)
                 voting_proba[i][0] = 1 - voting_proba[i][1]
                 voting_label[i] = 1
+    # voting_prob = sigmoid(voting_proba * 10 - 0.5 * 10)
     return [rf, voting_label, voting_proba]
 
 
@@ -378,7 +402,22 @@ def analysis_results(results, y_test, hp):
         # draw calibration curve
         prob_pos = item[2].T[1]
         fraction_of_positives, mean_predicted_value = calibration_curve(y_test, prob_pos, n_bins=5)
-        ax3.plot(mean_predicted_value, fraction_of_positives, "s-", label="%s" % (key, ))
+
+        def getDis(pointX, pointY, lineX1, lineY1, lineX2, lineY2):
+            a = lineY2 - lineY1
+            b = lineX1 - lineX2
+            c = lineX2 * lineY1 - lineX1 * lineY2
+            dis = (math.fabs(a * pointX + b * pointY + c)) / (math.pow(a * a + b * b, 0.5))
+            return dis
+
+        dists = []
+        for item in zip(mean_predicted_value, fraction_of_positives):
+            dists.append(getDis(item[0], item[1], 0, 0, 1, 1))
+        dists = np.array(dists)**2
+        dist_mse = dists.sum()/len(dists)
+
+        ax3.plot(mean_predicted_value, fraction_of_positives, "s-",
+                 label="%s" % (key+'  MSE:'+str("{:.3}".format(dist_mse)), ))
         ax4.hist(prob_pos, label=key, histtype='step', lw=2)
 
     ax1.legend(labels_roc, loc='lower right', prop=dict(size=14))
@@ -414,6 +453,12 @@ if __name__ == "__main__":
               y_test_zf.reshape(len(y_test_zf), ),
               test_label_xy.reshape(len(test_data_xy), )]
     patient_id = [id_gg, id_zf, id_xy]
+    weights1 = {'gg': np.array([0.4, 0.3, 0.3]),
+                'zf': np.array([0.4, 0.3, 0.3]),
+                'xy': np.array([0.6, 0.3, 0.1])}
+    weights2 = {'gg': np.array([1.2, 1.2, 1]),
+                'zf': np.array([1.2, 1.2, 1]),
+                'xy': np.array([0.6, 0.3, 0.1])}
     for i, hp in zip(range(3), ['gg', 'zf', 'xy']):
         rf_results = rf(X_train, y_train, X_test[i], y_test[i])
         gbdt_results = gbdt(X_train, y_train, X_test[i], y_test[i])
@@ -423,17 +468,23 @@ if __name__ == "__main__":
         svm_results = svm(X_train, y_train, X_test[i], y_test[i])
         mlp_results = mlp(X_train, y_train, X_test[i], y_test[i])
         # stack method
-        stack_results = stack_models(X_train, y_train, X_test[i], y_test[i])
+        # stack_results = stack_models(X_train, y_train, X_test[i], y_test[i])
         # voting method
         vote_results = voting(rf_results[2],
                               lrl2_results[2],
                               svm_results[2],
-                              np.array([1.2, 1.2, 1.1]))
+                              weights1,
+                              'soft',
+                              hp
+                              )
         vote_with_mlp = voting(rf_results[2],
                                lrl2_results[2],
                                mlp_results[2],
-                               np.array([1, 1, 1]))
-        predict = np.hstack((vote_results[1].reshape(len(stack_results[1]), 1), patient_id[i]))
+                               weights2,
+                               'soft',
+                               hp
+                               )
+        predict = np.hstack((vote_results[1].reshape(len(vote_results[1]), 1), patient_id[i]))
         predict_res = pd.DataFrame(predict, columns=['label', 'id'])
         predict_res.to_excel(path+'/'+hp+'-'+'-predict-results.xlsx', index=False)
         results1 = {
@@ -444,14 +495,11 @@ if __name__ == "__main__":
                     'SVM': svm_results,
                     'MLP': mlp_results,
                     }
-        '''
         results2 = {
-                   'MLP': mlp_results,
-                   'SVM': svm_results,
+                   'GBDT': mlp_results,
                    'KNN': knn_results}
-        '''
         # save shap results
         os.makedirs(path+'/shape', exist_ok=True)
-        # shap_interpretation.run_shap(results1, X_test[i], path+'/shape', hp)
+        shap_interpretation.run_shap(results1, X_test[i], path+'/shape', hp)
         analysis_results(results1, y_test[i], hp)
-        # analysis_results(results2, y_test[i], hp)
+        analysis_results(results2, y_test[i], hp)

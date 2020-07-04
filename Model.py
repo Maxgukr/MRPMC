@@ -211,12 +211,12 @@ class SVM:
                          probability=True,
                          tol=0.001,
                          cache_size=200,
-                         class_weight={1: 1, 2: 3},
+                         class_weight={1: 1, 2: 2.7},
                          verbose=False,
                          max_iter=-1,
                          decision_function_shape='ovr',
                          break_ties=False,
-                         random_state=13)
+                         random_state=15)
         std = StandardScaler()
         self.X = std.fit_transform(X)
         self.y = y

@@ -37,22 +37,32 @@ def combine_features_rank(feature_path):
     return new_rank_df
 
 
+SF_impute_median = './data_filter5_median_impute/SF_impute_with_median.xlsx'
+SF_impute_svd = './data_filter30_svdimpute/SF.xlsx'
+
+OV_impute_median = './data_filter5_median_impute/OV_impute_with_median.xlsx'
+OV_impute_svd = './data_filter30_svdimpute/OV.xlsx'
+
+CHWH_impute_median = './data_filter5_median_impute/CHWH_impute_with_median.xlsx'
+CHWH_impute_svd = './data_filter30_svdimpute/CHWH_replace.xlsx'
+
+
 def run(res_auc,
         delete_n_last_common_features,
         n_common_last,
         delete_n_last_features,
         n_last):
-    X_train, y_train, X_test_zf, y_test_zf, id_zf = generate_train_data('./data_filter30_svdimpute/SF.xlsx',
+    X_train, y_train, X_test_zf, y_test_zf, id_zf = generate_train_data(SF_impute_svd,
                                                                         delete_n_last_common_features=delete_n_last_common_features,
                                                                         n_common_last=n_common_last,
                                                                         delete_n_last_features=delete_n_last_features,
                                                                         n_last=n_last)
-    test_data_gg, test_label_gg, columns, id_gg = generate_data('./data_filter30_svdimpute/OV.xlsx',
+    test_data_gg, test_label_gg, columns, id_gg = generate_data(OV_impute_svd,
                                                                 delete_n_last_common_features=delete_n_last_common_features,
                                                                 n_common_last=n_common_last,
                                                                 delete_n_last_features=delete_n_last_features,
                                                                 n_last=n_last)
-    test_data_xy, test_label_xy, _, id_xy = generate_data('./data_filter30_svdimpute/CHWH.xlsx',
+    test_data_xy, test_label_xy, _, id_xy = generate_data(CHWH_impute_svd,
                                                           delete_n_last_common_features=delete_n_last_common_features,
                                                           n_common_last=n_common_last,
                                                           delete_n_last_features=delete_n_last_features,
@@ -69,6 +79,9 @@ def run(res_auc,
     if delete_n_last_features:
         n = n_last
     res_auc.loc[n]['feature_num'] = X_train.shape[1]
+    weights1 = {'gg': np.array([0.4, 0.3, 0.3]),
+                'zf': np.array([0.4, 0.3, 0.3]),
+                'xy': np.array([0.6, 0.3, 0.1])}
     for i, hp in zip(range(3), ['gg', 'zf', 'xy']):
         rf_results = rf(X_train, y_train, X_test[i], y_test[i])
         lrl2_results = lrl2(X_train, y_train, X_test[i], y_test[i])
@@ -77,7 +90,9 @@ def run(res_auc,
         vote_results = voting(rf_results[2],
                               lrl2_results[2],
                               svm_results[2],
-                              np.array([1.2, 1.2, 1.1]))
+                              weights1,
+                              'soft',
+                              hp)
         fpr, tpr, thr_ = roc_curve(y_test[i], vote_results[2].T[1], pos_label=2)
         res_auc.loc[n][hp] = auc(fpr, tpr)
 
@@ -115,9 +130,10 @@ def feature_select_by_delete_combine_features():
             True,
             i)
     res_auc.set_index('feature_num', drop=True, inplace=True)
-    res_auc.to_excel('./feature_select/VoteModel-AUC-Vary-with-Feature-Num-2'
+    res_auc.to_excel('./feature_select/VoteModel-AUC-Vary-with-Feature-Method-2-'
                      + dt.datetime.now().strftime('%Y%m%d-%H-%M')+'.xlsx')
     ax = res_auc.plot(kind='bar')
+    ax.set_ylim([0.88, 0.98])
     fig = ax.get_figure()
     fig.savefig('./feature_select/method2.pdf', dpi=400)
 

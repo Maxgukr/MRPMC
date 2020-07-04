@@ -122,6 +122,7 @@ def generate_train_data(filename,
                                              n_last=n_common_last)
         data.drop(columns=n_last_delete, inplace=True)
 
+    # data = shuffle(data, random_state=17)
     df_death = data.loc[data.Death == 2]
     df_live = data.loc[data.Death == 1]
 
