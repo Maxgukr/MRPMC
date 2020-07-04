@@ -275,10 +275,10 @@ summary1 = pd.DataFrame(data=np.zeros((20, 18)),
                         )
 
 
-# summary two models' results
-summary2 = pd.DataFrame(data=np.zeros((20, 6)),
+# summary three models' results
+summary2 = pd.DataFrame(data=np.zeros((20, 9)),
                         columns=pd.MultiIndex.from_product([['gg', 'zf', 'xy'],
-                                                           ['GBDT', 'KNN']]),
+                                                           ['Stack', 'GBDT', 'KNN']]),
                         index=['AUC',
                                'AUC-95%-CI-low',
                                'AUC-95%-CI-up',
@@ -299,7 +299,7 @@ summary2 = pd.DataFrame(data=np.zeros((20, 6)),
                                'FN',
                                'FP',
                                'TN']
-                       )
+                        )
 
 
 def analysis_results(results, y_test, hp):
@@ -458,6 +458,7 @@ if __name__ == "__main__":
                                'soft',
                                hp
                                )
+        stack_results = stack_models(X_train, y_train, X_test[i], y_test[i])
         predict = np.hstack((vote_results[1].reshape(len(vote_results[1]), 1), patient_id[i]))
         predict_res = pd.DataFrame(predict, columns=['label', 'id'])
         predict_res.to_excel(path+'/'+hp+'-'+'-predict-results.xlsx', index=False)
@@ -470,6 +471,7 @@ if __name__ == "__main__":
                     'MLP': mlp_results,
                     }
         results2 = {
+                   'Stack': stack_results,
                    'GBDT': mlp_results,
                    'KNN': knn_results}
         # save shap results

@@ -64,12 +64,12 @@ def fill_nan(data, fm, filename):
 
 def delete_last_features(rf, gbdt, lr, svm, n_last=20, thr=2):
     '''
-    :param rf: rf特征排序结果，以下含义类推
-    :param gbdt:
-    :param lr:
-    :param svm:
-    :param n_last: 排名倒数多少个，默认倒数20个
-    :param thr: 出现次数的阈值，默认为3
+    :param rf: rf feature rank
+    :param gbdt: gbdt feature rank
+    :param lr: lr feature rank
+    :param svm: svm feature rank
+    :param n_last: The number of times the feature appears in the last
+    :param thr: The number of times the feature appears in the last "n_last"，default is 3
     :return:
     '''
     rf = pd.read_excel(rf).columns.values.tolist()
@@ -96,24 +96,23 @@ def generate_train_data(filename,
                         delete_n_last_features=False,
                         n_last=0):
     '''
-    专门处理中法医院的数据，中法医院一部分用作训练集，一部分用作内部测试集
-    :param filename: 中法医院数据文件
-    :param split_rate: 分割比例
-    :param delete_n_last_common_features: 删除在rf, lr, svm中都出现的公共特征
-    :param n_common_last: 要选择的公共部分的数量
-    :param delete_n_last_features 删除加权平均后的倒数n个特征
-    :param n_last 删除加权平均后的特征数量
+    deal with SF data set, split for train and test data
+    :param filename: SF data set file path
+    :param split_rate: split rate, default is 0.8
+    :param delete_n_last_common_features: delete method 1
+    :param n_common_last: delete number
+    :param delete_n_last_features delete method 2
+    :param n_last delete number
     :return: x_tarin, y_train, x_test, y_test
     '''
     data = pd.read_excel(filename)
-    # 删除组合之后的最后几个特征
+    # delete n_last features from combine feature rank from rf, lr, svm
     if delete_n_last_features:
         combine_feature_rank = pd.read_excel('./feature_select/combine_feature_rank.xlsx')
         features = combine_feature_rank.columns.values[-n_last:]
         data.drop(columns=features, inplace=True)
 
-    # 删除特征排序中，在RF，GBDT，LR，SVM中排名最后20个中，出现三次以上的特征
-    # delete last 20 features in features rank of rf,gbdt,ls, svm
+    # delete n_common_last features in features rank of rf, ls, svm
     if delete_n_last_common_features:
         path = './feature_select/'
         n_last_delete = delete_last_features(rf=path + 'rf_feature_importance.xlsx',
@@ -122,11 +121,10 @@ def generate_train_data(filename,
                                              n_last=n_common_last)
         data.drop(columns=n_last_delete, inplace=True)
 
-    # data = shuffle(data, random_state=17)
     df_death = data.loc[data.Death == 2]
     df_live = data.loc[data.Death == 1]
 
-    # split zhong-fa hospital data split的时候，将死亡和出院先分开，以免分割不均匀
+    # When splitting, separate death and discharge first to avoid uneven splitting
     death_split_index = math.ceil(len(df_death) * split_rate)
 
     df_death_train = df_death[:death_split_index]
@@ -137,42 +135,22 @@ def generate_train_data(filename,
     df_live_train = df_live[:live_split_index]
     df_live_test = df_live[live_split_index:]
 
-    # 将train需要的死亡数据与训练用的出院数据合并再打散顺序
+    # Combine the death data needed for training with the discharge data for training and then break up the order
     df_train = pd.concat([df_death_train, df_live_train], axis=0)
     df_train = shuffle(df_train)
-    # 将test需要的死亡数据与训练用的出院数据合并再打散顺序
+    # Combine the death data required by test with the discharge data and break up the order
     df_test = pd.concat([df_death_test, df_live_test], axis=0)
     df_test = shuffle(df_test)
 
-    # 获得train数据和test数据的label y_train, y_test
+    # get train and test label y_train, y_test
     y_train = df_train.get(['Death']).values.reshape(len(df_train), 1)
     y_test = df_test.get(['Death']).values.reshape(len(df_test), 1)
     df_train.drop(columns=['Death', 'ID'], inplace=True)
     id1 = df_test.get(['ID']).values.reshape(len(df_test), 1)
 
-    # 获得train数据和test数据的输入，x_train，x_test
+    # delete Death and ID item in test data
     df_test.drop(columns=['Death', 'ID'], inplace=True)
-    # x_train = df_train.values
-    # x_test = df_test.values
 
-    # using over sampling or not for few label
-    # 是否采用SMOTENC算法对样本较少的死亡样本进行人工扩充（生成伪死亡样本）
-    '''
-    if over_sample:
-        # print(Counter(y_train.reshape(len(y_train, )).tolist()))
-        # using SOMTENC for over sample
-        smo = SMOTENC(categorical_features=[1, 2, 3, 7, 8, 9, 10, 38, 39],
-                      sampling_strategy=0.5,
-                      random_state=42)
-        X_train, y_train = smo.fit_sample(x_train, y_train)
-        # print(Counter(y_smo.reshape(len(y_smo, )).tolist()))
-        df_train_smo = pd.DataFrame(data=np.hstack((X_train, y_train.reshape(len(y_train), 1))),
-                                    columns=data.drop(columns=['ID']).columns.values.tolist())
-        df_train_smo = shuffle(df_train_smo)
-        y_train = df_train_smo.get(['Death']).values
-        df_train_smo.drop(columns=['Death'], inplace=True)
-        x_train = df_train_smo.values
-    '''
     return df_train, y_train, df_test, y_test, id1
 
 
@@ -182,16 +160,15 @@ def generate_data(filename,
                   delete_n_last_features=False,
                   n_last=0):
     '''
-    用来处理光谷院区，襄阳院区的数据
-    :param filename: 医院数据文件
-    :param delete_n_last_common_features: 删除在rf, lr, svm中都出现的公共特征
-    :param n_common_last: 要选择的公共部分的数量
-    :param delete_n_last_features 删除加权平均后的倒数n个特征
-    :param n_last 删除加权平均后的特征数量
+    deal with OV and CHWH dataset
+    :param filename:
+    :param delete_n_last_common_features: delete method 1
+    :param n_common_last: delete number
+    :param delete_n_last_features delete method 2
+    :param n_last delete number
     :return: x_tarin, y_train, x_test, y_test
     '''
     data = pd.read_excel(filename)
-    # 删除组合之后的最后几个特征
     if delete_n_last_features:
         combine_feature_rank = pd.read_excel('./feature_select/combine_feature_rank.xlsx')
         features = combine_feature_rank.columns.values[-n_last:]
@@ -214,13 +191,11 @@ def generate_data(filename,
     columns = data.columns.values[:-1]
     label = data.get(['Death']).values.reshape(len(data), 1)
     data.drop(columns=['Death'], inplace=True)
-    # data_train = data.values
     return data, label, columns, ID
 
 
 def data_description(filename):
     '''
-    分成死亡和出院两种，统计每个特征的缺失情况
     :param filename:
     :return:
     '''
@@ -249,18 +224,7 @@ def data_description(filename):
     data.drop(columns=n_last_delete, inplace=True)
     data.drop(columns=['Death'], inplace=True)
     data.to_excel('./feature_select/impute_with_normal_range_'+filename.split('/')[-1][:2]+'.xlsx', index=False)
-    '''
-    data_death = data.loc[data.Death == 2]
-    data_live = data.loc[data.Death == 1]
-    res_death = len(data_death) - data_death.count().values
-    res_live = len(data_live) - data_live.count().values
-    v = np.vstack((res_death, res_live))
-    columns = data.columns.values.tolist()
-    pd_res = pd.DataFrame(data=v.reshape(2, len(columns)), columns=columns,
-                          index=['death'+str(len(data_death)), 'live'+str(len(data_live))])
-    pd_res.to_excel('./data_description/'+'Nan-statistic-'+filename[7:], index=True)
-    print("")
-    '''
+
 
 if __name__ == "__main__":
     # combine_features_rank()

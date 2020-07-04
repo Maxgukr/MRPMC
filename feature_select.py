@@ -20,7 +20,7 @@ def combine_features_rank(feature_path):
         columns = pd.read_excel(path).columns.values.tolist()
         index = [i+1 for i in range(len(columns))]
         model_feature[model] = dict(zip(columns, index))
-    # 每种模型排名对应的权重，用对应的F1值表示
+    # weights for each model with f1-score
     weights = {'rf': 0.7, 'lrl2': 0.72, 'svm': 0.73}
     columns = list(model_feature['rf'].keys())
     new_rank = {}

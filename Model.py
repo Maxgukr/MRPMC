@@ -5,15 +5,13 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 import lightgbm as lgb
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Activation
+from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.optimizers import SGD
 import joblib
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
-from sklearn.ensemble import VotingClassifier, StackingClassifier
 from mlxtend.classifier import EnsembleVoteClassifier
 from numpy.random import seed
 
@@ -241,9 +239,7 @@ class MLP:
     def __init__(self, X, y, X_test, y_test):
         seed(2020)
         self.model = Sequential()
-        # Dense(64) is a fully-connected layer with 64 hidden units.
         # in the first layer, you must specify the expected input data shape:
-        # here, 20-dimensional vectors.
         self.model.add(Dense(X.values.shape[1], activation='relu', input_dim=X.values.shape[1]))
         self.model.add(Dropout(0.5))
         self.model.add(Dense(128, activation='relu'))
@@ -254,7 +250,7 @@ class MLP:
 
         sgd = SGD(lr=0.03, decay=1e-6, momentum=0.9, nesterov=True)
         self.model.compile(loss='binary_crossentropy',
-                           optimizer=sgd, # 'rmsprop'
+                           optimizer=sgd,
                            metrics=['accuracy'])
         std = StandardScaler()
         self.X = std.fit_transform(X)
@@ -285,20 +281,20 @@ class StackModel:
                                              random_state=13,
                                              verbose=0),
                       SVC(C=1.0,
-                         kernel='linear',
-                         degree=3,
-                         gamma='scale',
-                         coef0=0.0,
-                         shrinking=True,
-                         probability=True,
-                         tol=0.001,
-                         cache_size=200,
-                         class_weight={1: 1, 2: 3},
-                         verbose=False,
-                         max_iter=-1,
-                         decision_function_shape='ovr',
-                         break_ties=False,
-                         random_state=13)]
+                          kernel='linear',
+                          degree=3,
+                          gamma='scale',
+                          coef0=0.0,
+                          shrinking=True,
+                          probability=True,
+                          tol=0.001,
+                          cache_size=200,
+                          class_weight={1: 1, 2: 3},
+                          verbose=False,
+                          max_iter=-1,
+                          decision_function_shape='ovr',
+                          break_ties=False,
+                          random_state=13)]
         self.LR = LogisticRegression(penalty='l2',
                                      C=0.85,
                                      solver='liblinear',
