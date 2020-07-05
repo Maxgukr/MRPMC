@@ -1,14 +1,17 @@
-# CIRPMC: Critical Illness Risk Prediction Model for COVID-19
+# MRPMC: Mortality Risk Prediction Model for COVID-19
 
-CIRPMC: Critical Illness Risk Prediction Model for COVID-19
+MRPMC: Mortality Risk Prediction Model for COVID-19
 
 
 ## Pre-requirements
-* R3.6
-* caret
-* e1071
-* gbm
-* randomForest
+* Python 3.7
+* numpy 1.16
+* pandas 0.25
+* lightgbm 2.3.1
+* scikit-learn
+* shap 0.35
+* tensorflow 2.2.0
+* mlxtend 0.17.2
 
 
 ## Installation
@@ -51,19 +54,34 @@ predict_CIRPMC.R -i test_X.csv -o pred_Y.csv
 ### Input file
 
 
-Input file is a csv file, stores the measurements of 7 inflammatory markers for each patient:
-* IL-1β   (pg/mL, < 5.0)
-* TNF-α (pg/mL, < 8.1)
-* IL-6     (pg/mL, < 7.0)
-* IL-10   (pg/mL, < 9.1)
-* IL-8     (pg/mL, < 62)
-* PCT     (ng/mL, > 0)
-* CRP     (mg/L,   > 0)
-
-Note: CRP, C reactive protein. PCT, procalcitonin. TNF-α, tumor necrosis factor α. IL-1 β, interleukin 1β. IL-2R, IL-6, interleukin 6. IL-8, interleukin 8. IL-10, interleukin 10. 
+Input file is a csv file, stores the measurements of 23 markers for each patient:
+* BUN	
+* SpO2	
+* RR	
+* No. comorbidities	
+* D-Dimer	
+* Age	
+* Hypertention	
+* LDH	
+* APTT	
+* WBC	
+* LBC	
+* PT	
+* UA	
+* Consciousness	
+* Hb	
+* ALB	
+* Diabetes	
+* Coronary heart disease	
+* PLT	
+* CRP	
+* Sputum	
+* TB	
+* PCT
+ 
 
 ### Output file
-Out file is a csv file, stores the predicted results from CIRPMC:
+Out file is a csv file, stores the predicted results from MRPMC:
 * LR: The predicted critical illness probablity from logistic regression
 * SVM: The predicted critical illness probablity from supported vector machine
 * RF: The predicted critical illness probablity from random forest
