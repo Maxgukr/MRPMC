@@ -16,7 +16,7 @@ def combine_features_rank(feature_path):
     model_feature = {}
     model_list = ['rf', 'lrl2', 'svm']
     for model in model_list:
-        path = feature_path+model+'_feature_importance.xlsx'
+        path = feature_path+model+'_feature_importance_23.xlsx'
         columns = pd.read_excel(path).columns.values.tolist()
         index = [i+1 for i in range(len(columns))]
         model_feature[model] = dict(zip(columns, index))
@@ -31,7 +31,7 @@ def combine_features_rank(feature_path):
         new_rank[col] = float(1.0/float(s/3.0))
     new_rank_df = pd.DataFrame(new_rank, index=[0])
     new_rank_df.sort_values(by=0, axis=1, ascending=False, inplace=True)
-    new_rank_df.to_excel('./feature_select/combine_feature_rank.xlsx', index=False)
+    new_rank_df.to_excel(feature_path+'combine_feature_rank.xlsx', index=False)
     new_rank_df.loc[0, new_rank_df.columns.values].plot(kind='bar')
     plt.show(block=False)
     return new_rank_df
@@ -119,7 +119,7 @@ def feature_select_by_delete_common_features():
 def feature_select_by_delete_combine_features():
     # method 2
     n_last_features = [i for i in range(1, 20, 2)]
-    combine_features_rank('./feature_select/')
+    combine_features_rank('results/20200703-21-00-impute-svd-used/feature_rank/')
     res_auc = pd.DataFrame(data=np.zeros((len(n_last_features), 4)),
                            columns=['feature_num', 'gg', 'zf', 'xy'],
                            index=n_last_features)
