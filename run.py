@@ -19,6 +19,7 @@ import math
 # fixed random seed
 seed(2020)
 
+
 SF_impute_median = './data_filter5_median_impute/SF_impute_with_median.xlsx'
 SF_impute_svd = './data_filter30_svdimpute/SF.xlsx'
 
@@ -48,7 +49,7 @@ os.makedirs(path, exist_ok=True)
 save_models = './save_models'
 os.makedirs(save_models, exist_ok=True)
 # feature rank path
-rank_path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M') + '-feature_rank/'
+rank_path = './feature_select/' + dt.datetime.now().strftime('%Y%m%d-%H-%M') + '-feature_rank'
 os.makedirs(rank_path, exist_ok=True)
 
 
@@ -74,7 +75,7 @@ def gbdt(X_train, y_train, X_test, y_test, save=True):
                                             columns=list(columns))
     df_gbdt_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     if save:
-        df_gbdt_feature_importance.to_excel(rank_path+'gbdt_feature_importance'+str(X_train.shape[1])+'.xlsx',
+        df_gbdt_feature_importance.to_excel(rank_path+'/gbdt_feature_importance'+str(X_train.shape[1])+'.xlsx',
                                             index=False)
     print("gradient boost get score:", gbdt_score)
     return [gbdt, gbdt_predict_result, gbdt_predict_result_prob]
@@ -98,7 +99,7 @@ def rf(X_train, y_train, X_test, y_test, save=True):
                                             columns=list(X_train.columns.values))
     df_rf_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     if save:
-        df_rf_feature_importance.to_excel(rank_path+'rf_feature_importance_'+str(X_train.shape[1])+'.xlsx',
+        df_rf_feature_importance.to_excel(rank_path+'/rf_feature_importance_'+str(X_train.shape[1])+'.xlsx',
                                           index=False)
     print("random forest get score:", rf_score)
     return [rf, rf_predict_result, rf_predict_result_prob]
@@ -120,7 +121,7 @@ def lrl2(X_train, y_train, X_test, y_test, save=True):
                                             columns=list(X_train.columns.values))
     df_lr_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     if save:
-        df_lr_feature_importance.to_excel(rank_path+'lrl2_feature_importance_'+str(X_train.shape[1])+'.xlsx',
+        df_lr_feature_importance.to_excel(rank_path+'/lrl2_feature_importance_'+str(X_train.shape[1])+'.xlsx',
                                           index=False)
     print("lr L2 get score:", lr.lr_score())
     return [lr, lr_predict, lr_predict_prob]
@@ -142,7 +143,7 @@ def lrl1(X_train, y_train, X_test, y_test, save=True):
                                             columns=list(X_train.columns.values))
     df_lr_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     if save:
-        df_lr_feature_importance.to_excel(rank_path+'lrl1_feature_importance'+str(X_train.shape[1])+'.xlsx',
+        df_lr_feature_importance.to_excel(rank_path+'/lrl1_feature_importance'+str(X_train.shape[1])+'.xlsx',
                                           index=False)
     print("lr L1 get score:", lr.lr_score())
     return [lr, lr_predict, lr_predict_proba]
@@ -178,7 +179,7 @@ def svm(X_train, y_train, X_test, y_test, save=True):
                                              columns=list(X_train.columns.values))
     df_svm_feature_importance.sort_values(by=0, axis=1, ascending=False, inplace=True)
     if save:
-        df_svm_feature_importance.to_excel(rank_path+'svm_feature_importance_'+str(X_train.shape[1])+'.xlsx',
+        df_svm_feature_importance.to_excel(rank_path+'/svm_feature_importance_'+str(X_train.shape[1])+'.xlsx',
                                            index=False)
     print("svm get score:", svm.svm_score())
     return [svm, svm_predict, svm_confidence]
@@ -469,13 +470,22 @@ if __name__ == "__main__":
                     'LR': lrl2_results,
                     'SVM': svm_results,
                     'MLP': mlp_results,
-                    }
+                   }
         results2 = {
-                   'Stack': stack_results,
-                   'GBDT': mlp_results,
-                   'KNN': knn_results}
-        # save shap results
-        os.makedirs(path+'/shape', exist_ok=True)
-        shap_interpretation.run_shap(results1, X_test[i], path+'/shape', hp)
+                    'Stack': stack_results,
+                    'GBDT': mlp_results,
+                    'KNN': knn_results
+                   }
+        # analysis results
         analysis_results(results1, y_test[i], hp)
         analysis_results(results2, y_test[i], hp)
+        # save shap results
+        vote_results_mlxtend = vote_models(X_train, y_train, X_test[i], model_lists=[rf_results[0].model,
+                                                                                     lrl2_results[0].model,
+                                                                                     svm_results[0].model])
+        results_shap = {
+                   'MLP': mlp_results,
+                   'MRPMC': vote_results_mlxtend
+        }
+        os.makedirs(path+'/shape', exist_ok=True)
+        shap_interpretation.run_shap(results_shap, X_test[i], path+'/shape', hp)

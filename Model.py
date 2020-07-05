@@ -347,7 +347,7 @@ class VotingModel:
         self.model = EnsembleVoteClassifier(clfs=model_lists,
                                             weights=[1, 1, 1],
                                             refit=False,
-                                            voting='hard')
+                                            voting='soft')
         self.X = X
         self.y = y
         self.X_test = x_test
