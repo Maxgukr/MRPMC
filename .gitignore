@@ -3,3 +3,6 @@
 /feature_select
 /results
 /save_models
+/data_filter5_median_impute
+/data_filter30_svdimpute
+/data_impute_with_normal_range
