@@ -2,7 +2,7 @@
 
 MRPMC: Mortality Risk Prediction Model for COVID-19
 
-Please run the latest R version of MRMC.
+Please run the latest R version of MRPMC.
 
 ## Installation
 
