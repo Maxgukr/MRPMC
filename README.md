@@ -17,5 +17,5 @@ cd MRPMC
 ## Cite us
 
 ## Help
-If you have any questions or require assistance using CIRPMC, please open an issue.
+If you have any questions or require assistance using MRPMC, please open an issue.
 
