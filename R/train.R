@@ -190,7 +190,7 @@ my_survival_analysis <- function(df,
 
 split_dataset <- function(x, y, ratio, seed){
   
-  smp_size <- floor(0.5 * nrow(x))
+  smp_size <- floor(ratio * nrow(x))
   ## set the seed to make your partition reproducible
   set.seed(seed)
   train_ind <- sample(seq_len(nrow(x)), size = smp_size)

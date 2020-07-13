@@ -2,7 +2,7 @@
 source('Rscript/train.R')
 palette <- c("#313695", "#D73027")
 
-res <- split_dataset(SF_X, SF_y, 0.8, 123)
+res <- split_dataset(SF_X, SF_y, 0.5, 123)
 train_SF_X <- res$train_x
 train_SF_y <- res$train_y   
 test_SF_X <- res$test_x
