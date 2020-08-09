@@ -1,5 +1,5 @@
 # feature selection
-source('Rscript/train.R')
+source('MRPMC/R/train.R')
 palette <- c("#313695", "#D73027")
 
 res <- split_dataset(SF_X, SF_y, 0.5, 123)
@@ -10,14 +10,14 @@ test_SF_y <- res$test_y
 
 train_SF_patients <- rownames(train_SF_X)
 test_SF_patients <- rownames(test_SF_X)
- 
+
+
 if(F){
   control <- rfeControl(functions=rfFuncs, method="cv", number=10)
   # run the RFE algorithm
   results <- rfe(train_SF_X, train_SF_y$status, sizes=c(1:dim(train_SF_X)[2]), rfeControl=control,
-                 metric = "ROC",
-                 preProc = c("center", "scale")
-  )
+                 metric = "ROC", preProc = c('center', 'scale'))
+  
   # summarize the results
   print(results)
   # list the chosen features
@@ -68,20 +68,41 @@ model_list <- train_models(train_SF_X[, features],
 # predict model
 if(T){
   models <- c('LR', 'SVM', 'KNN', 'RF', 'GBDT', 'NN', 'Ensemble')
-  train_SF_pred_df <- pred_models(model_list, train_SF_X[, features], train_SF_y)
+  train_SF_pred_df <- pred_models(model_list, train_SF_X[, features], train_SF_y, 0.5)
+  
+  m <- c('Ensemble')
+  df <- train_SF_pred_df
+  m_df <- NULL
+  for (cutoff in seq(0, 1, 0.05)){
+    tmp <- calculate_metrics(df, m, cutoff)
+    tmp$Cutoff <- cutoff
+    m_df <- rbind(m_df, tmp)
+  }
+  f1 <- max(m_df$F1, na.rm=T)
+  cutoff <- m_df[m_df$F1 == f1, ]$Cutoff[1]
+  print(cutoff)
+  if(T){
+    pdf('result/train_p_cutoff.pdf', width = 15, height = 10)
+    library(ggpubr)
+    f <- ggbarplot(m_df, 'Cutoff', 'F1', fill='steelblue', label=T, repel=T) 
+    print(f)
+    dev.off()
+  }
+  train_SF_pred_df <- pred_models(model_list, train_SF_X[, features], train_SF_y, cutoff)
+  
   #ens_model <- train_ensemble(train_SF_pred)
   #train_SF_pred_df <- pred_ensemble(ens_model, train_SF_pred)
   f1 <- plot_roc(train_SF_pred_df, models, 'train_SF')
   
-  test_SF_pred_df <- pred_models(model_list, test_SF_X[, features], test_SF_y)
+  test_SF_pred_df <- pred_models(model_list, test_SF_X[, features], test_SF_y, cutoff)
   #test_SF_pred_df <- pred_ensemble(ens_model, test_SF_pred)
   f2 <- plot_roc(test_SF_pred_df, models, 'test_SF')
   
-  OV_pred_df <- pred_models(model_list, OV_X[, features], OV_y)
+  OV_pred_df <- pred_models(model_list, OV_X[, features], OV_y, cutoff)
   #OV_pred_df <- pred_ensemble(ens_model, OV_pred)
   f3 <- plot_roc(OV_pred_df, models, 'OV')
   
-  CHWH_pred_df <- pred_models(model_list, CHWH_X[, features], CHWH_y)
+  CHWH_pred_df <- pred_models(model_list, CHWH_X[, features], CHWH_y, cutoff)
   f4 <- plot_roc(CHWH_pred_df, models, 'CHWH')
 
   
@@ -126,15 +147,15 @@ if(T){
   CHWH_df$`Patient ID` <- rownames(CHWH_X)
   write.csv(CHWH_df, 'result/CHWH.csv')  
 
-metrics_df <- calculate_metrics(train_SF_pred_df, models)
+metrics_df <- calculate_metrics(train_SF_pred_df, models, cutoff)
 metrics_df$Dataset <- 'train_SF'
-tmp <- calculate_metrics(test_SF_pred_df, models)
+tmp <- calculate_metrics(test_SF_pred_df, models, cutoff)
 tmp$Dataset <- 'test_SF'
 metrics_df <- rbind(metrics_df, tmp)
-tmp <- calculate_metrics(OV_pred_df, models)  
+tmp <- calculate_metrics(OV_pred_df, models, cutoff)  
 tmp$Dataset <- 'OV'
 metrics_df <- rbind(metrics_df, tmp)
-tmp <- calculate_metrics(CHWH_pred_df, models)
+tmp <- calculate_metrics(CHWH_pred_df, models, cutoff)
 tmp$Dataset <- 'CHWH'
 metrics_df <- rbind(metrics_df, tmp)
 write.csv(metrics_df, 'result/performance.csv')
@@ -163,9 +184,9 @@ if(T){
   print(f)
   dev.off()
 }
-  }
+}
 
-get_feature_importance <- function(model_list, features){
+  get_feature_importance <- function(model_list, features){
   df <- NULL
   models <- names(model_list$model_list)
   for (m in models){

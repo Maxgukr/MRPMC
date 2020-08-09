@@ -1,6 +1,6 @@
 
 # training models
-pred_models <- function(model_list, X, y){
+pred_models <- function(model_list, X, y, cutoff){
   calibrate_model_list <- model_list$calibrate_model_list
   model_list <- model_list$model_list
   df <- y
@@ -9,7 +9,7 @@ pred_models <- function(model_list, X, y){
   }
   rownames(df) <- rownames(X)
   df$Ensemble <- df$LR*0.25 + df$SVM*0.3 + + df$GBDT*0.1 + df$NN*0.35
-  df$Cluster <- as.factor(as.numeric(df$Ensemble >= 0.5))
+  df$Cluster <- as.factor(as.numeric(df$Ensemble >= cutoff))
   return(df)
 }
 
@@ -30,7 +30,7 @@ train_model <- function(X, y, method=NULL){
                  trControl=objControl, 
                  weights = model_weights,
                  metric = "ROC",
-                 preProc = c("center", "scale"))
+                 preProc = c('BoxCox', 'center', 'scale'))
   pred_y <- predict(model, newdata = X, type='prob')[[2]]
   
   tmp <- data.frame(X=pred_y, y=y)
@@ -39,7 +39,7 @@ train_model <- function(X, y, method=NULL){
                           family='binomial',
                           trControl=objControl, 
                           metric = "ROC",
-                          preProc = c("center", "scale"))
+                          preProc = c('BoxCox', 'center', 'scale'))
   return (list(model=model, calibrate_model=calibrate_model))
 }
 
@@ -86,11 +86,12 @@ pred_func <- function(model, calibrate_model, X){
 
 
 
-calculate_metrics <- function(df, models){
+calculate_metrics <- function(df, models, cutoff){
   library(rms)
+  library(pROC)
   tmp <- NULL
   for(m in models){
-    cm <- confusionMatrix(factor(as.numeric(df[[m]]>= 0.5), levels=c('1','0')), factor(df$status, levels=c('1','0')), mode='everything')
+    cm <- confusionMatrix(factor(as.numeric(df[[m]]>= cutoff), levels=c('1','0')), factor(df$status, levels=c('1','0')), mode='everything')
     metrics <- epiR::epi.tests(dat=cm$table)
     values <- c()
     # AUC
@@ -98,9 +99,15 @@ calculate_metrics <- function(df, models){
     value <- round(ci.auc(df$status, df[[m]]), 4)
     value <- paste0(value[[2]], ' (', value[[1]], ' - ', value[[3]], ')')
     values <- c(values, value)
+    value <- round(ci.auc(df$status, df[[m]]), 4)
+    value <- as.numeric(value[[2]])
+    values <- c(values, value)
     for (metric in c('diag.acc', 'se', 'sp', 'ppv', 'npv')){
       value <- round(metrics$rval[[metric]], 4)
       value <- paste0(value$est, ' (', value$lower, ' - ', value$upper, ')')
+      values <- c(values, value)
+      value <- round(metrics$rval[[metric]], 4)
+      value <- as.numeric(value$est)
       values <- c(values, value)
     }
     # kappa
@@ -113,12 +120,26 @@ calculate_metrics <- function(df, models){
     value <- val.prob(df[[m]], df$status, m=10, pl=F)[['Brier']]
     values <- c(values, value)
     
-    names(values) <- c('AUC(95% CI)', 'ACC(95% CI)', 'SE(95% CI)', 'SP(95% CI)', 'PPV(95% CI)', 'NPV(95% CI)', 'Kappa', 'F1', 'Brier')
+    names(values) <- c('AUC(95% CI)', 'AUC', 'ACC(95% CI)', 'ACC',
+                       'SE(95% CI)', 'SE',
+                       'SP(95% CI)', 'SP',
+                       'PPV(95% CI)', 'PPV',
+                       'NPV(95% CI)', 'NPV',
+                       'Kappa', 'F1', 'Brier')
     tmp <- rbind(tmp, values)
   }
   tmp <- data.frame(tmp)
-  colnames(tmp) <- c('AUC(95% CI)', 'ACC(95% CI)', 'SE(95% CI)', 'SP(95% CI)', 'PPV(95% CI)', 'NPV(95% CI)', 'Kappa', 'F1', 'Brier')
+  colnames(tmp) <- c('AUC(95% CI)', 'AUC', 'ACC(95% CI)', 'ACC',
+                     'SE(95% CI)', 'SE',
+                     'SP(95% CI)', 'SP',
+                     'PPV(95% CI)', 'PPV',
+                     'NPV(95% CI)', 'NPV',
+                     'Kappa', 'F1', 'Brier')
   rownames(tmp) <- models
+  
+  for (m in c('AUC','ACC','SE','SP','PPV','NPV','Kappa', 'F1', 'Brier')){
+    tmp[[m]] <- as.numeric(as.character(tmp[[m]]))
+  }
   return(tmp)
 }
 
